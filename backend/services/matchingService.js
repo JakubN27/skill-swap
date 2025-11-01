@@ -27,7 +27,7 @@ function cosineSimilarity(vecA, vecB) {
  * Find reciprocal matches for a user
  * Match users where A can teach what B wants to learn, and vice versa
  */
-export async function findMatches(userId, limit = 10) {
+export async function findMatches(userId, limit = 10, searchSkill = null) {
   try {
     // Get the user's profile
     const { data: user, error: userError } = await supabase
@@ -39,20 +39,34 @@ export async function findMatches(userId, limit = 10) {
     if (userError) throw userError
     if (!user) throw new Error('User not found')
     
-    // Get all other users
+    // Get all other users (don't require embeddings)
     const { data: allUsers, error: usersError } = await supabase
       .from('users')
       .select('*')
       .neq('id', userId)
-      .not('embeddings', 'is', null)
     
     if (usersError) throw usersError
     if (!allUsers || allUsers.length === 0) {
       return []
     }
     
+  // Filter by search skill if provided
+  let filteredUsers = allUsers
+  if (searchSkill) {
+    const searchLower = searchSkill.toLowerCase()
+    filteredUsers = allUsers.filter(otherUser => {
+      const teachSkills = (otherUser.teach_skills || []).map(s => s.name.toLowerCase())
+      const learnSkills = (otherUser.learn_skills || []).map(s => s.name.toLowerCase())
+      const userName = (otherUser.name || '').toLowerCase()
+      
+      return teachSkills.some(skill => skill.includes(searchLower)) ||
+             learnSkills.some(skill => skill.includes(searchLower)) ||
+             userName.includes(searchLower)
+    })
+  }
+    
     // Calculate reciprocal scores
-    const matches = allUsers.map(otherUser => {
+    const matches = filteredUsers.map(otherUser => {
       // Score A→B: How well user A can teach what user B wants to learn
       const scoreAtoB = calculateMatchScore(
         user.teach_skills || [],
@@ -75,6 +89,7 @@ export async function findMatches(userId, limit = 10) {
         user_id: otherUser.id,
         user_name: otherUser.name,
         user_bio: otherUser.bio,
+        avatar_url: otherUser.avatar_url,
         teach_skills: otherUser.teach_skills,
         learn_skills: otherUser.learn_skills,
         score_a_to_b: scoreAtoB,
@@ -84,8 +99,15 @@ export async function findMatches(userId, limit = 10) {
       }
     })
     
-    // Sort by reciprocal score (highest first)
-    matches.sort((a, b) => b.reciprocal_score - a.reciprocal_score)
+    // Sort by reciprocal score (highest first), but also prioritize users with mutual skills
+    matches.sort((a, b) => {
+      // Prioritize matches with mutual skills
+      if (a.mutual_skills.length > 0 && b.mutual_skills.length === 0) return -1
+      if (a.mutual_skills.length === 0 && b.mutual_skills.length > 0) return 1
+      
+      // Then sort by score
+      return b.reciprocal_score - a.reciprocal_score
+    })
     
     // Return top matches
     return matches.slice(0, limit)
@@ -145,7 +167,9 @@ function findMutualSkills(userA, userB) {
           skill: teachSkill.name,
           teacher: userA.name,
           learner: userB.name,
-          direction: 'A→B'
+          direction: 'you_teach', // You (userA) can teach them (userB)
+          teacherId: userA.id,
+          learnerId: userB.id
         })
       }
     }
@@ -159,7 +183,9 @@ function findMutualSkills(userA, userB) {
           skill: teachSkill.name,
           teacher: userB.name,
           learner: userA.name,
-          direction: 'B→A'
+          direction: 'they_teach', // They (userB) can teach you (userA)
+          teacherId: userB.id,
+          learnerId: userA.id
         })
       }
     }

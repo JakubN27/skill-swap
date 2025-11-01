@@ -7,18 +7,21 @@ export const matchingRouter = express.Router()
 /**
  * GET /api/matching/find/:userId
  * Find potential matches for a user
+ * Query params: limit (number), skill (string) for search
  */
 matchingRouter.get('/find/:userId', async (req, res) => {
   try {
     const { userId } = req.params
     const limit = parseInt(req.query.limit) || 10
+    const searchSkill = req.query.skill || null
     
-    const matches = await findMatches(userId, limit)
+    const matches = await findMatches(userId, limit, searchSkill)
     
     res.json({
       success: true,
       count: matches.length,
-      matches
+      matches,
+      searchSkill: searchSkill
     })
   } catch (error) {
     console.error('Matching error:', error)
