@@ -28,14 +28,23 @@ export default function Matches() {
     }
   }
 
-  const findMatches = async (userId) => {
+  const findMatches = async (userId, skill = null) => {
     setSearching(true)
     try {
-      const response = await fetch(`http://localhost:3000/api/matching/find/${userId}?limit=20`)
+      // Build URL with optional skill parameter
+      let url = `http://localhost:3000/api/matching/find/${userId}?limit=20`
+      if (skill) {
+        url += `&skill=${encodeURIComponent(skill)}`
+      }
+      
+      const response = await fetch(url)
       const data = await response.json()
 
       if (data.success) {
         setPotentialMatches(data.matches || [])
+        if (skill && data.matches.length === 0) {
+          toast.error(`No matches found for "${skill}"`)
+        }
       } else {
         toast.error('Failed to find matches')
       }
@@ -83,30 +92,11 @@ export default function Matches() {
       return
     }
 
-    setSearching(true)
-    try {
-      // Filter matches by search query
-      const filtered = potentialMatches.filter(match => {
-        const teachSkills = match.teach_skills?.map(s => s.name.toLowerCase()) || []
-        const learnSkills = match.learn_skills?.map(s => s.name.toLowerCase()) || []
-        const query = searchQuery.toLowerCase()
-        
-        return teachSkills.some(skill => skill.includes(query)) ||
-               learnSkills.some(skill => skill.includes(query)) ||
-               match.user_name.toLowerCase().includes(query)
-      })
-
-      if (filtered.length === 0) {
-        toast.error('No matches found for that skill')
-      } else {
-        toast.success(`Found ${filtered.length} matches`)
-        setPotentialMatches(filtered)
+    if (user) {
+      await findMatches(user.id, searchQuery)
+      if (potentialMatches.length > 0) {
+        toast.success(`Found ${potentialMatches.length} matches for "${searchQuery}"`)
       }
-    } catch (error) {
-      console.error('Error searching:', error)
-      toast.error('Search failed')
-    } finally {
-      setSearching(false)
     }
   }
 
@@ -224,17 +214,33 @@ export default function Matches() {
               {match.mutual_skills && match.mutual_skills.length > 0 && (
                 <div className="mb-4 p-3 bg-green-50 rounded-lg">
                   <h4 className="text-sm font-semibold text-green-800 mb-2">
-                    🤝 Mutual Skills
+                    🤝 Skills You Can Exchange
                   </h4>
-                  <div className="space-y-1">
-                    {match.mutual_skills.slice(0, 3).map((mutual, idx) => (
-                      <div key={idx} className="text-sm text-green-700">
-                        {mutual.direction === 'A→B' ? '→' : '←'} {mutual.skill}
-                        <span className="text-xs text-green-600 ml-1">
-                          ({mutual.teacher} teaches {mutual.learner})
-                        </span>
+                  <div className="space-y-2">
+                    {match.mutual_skills.slice(0, 5).map((mutual, idx) => (
+                      <div key={idx} className="text-sm">
+                        {mutual.direction === 'you_teach' ? (
+                          <div className="flex items-start gap-2">
+                            <span className="text-blue-600 font-medium">You teach →</span>
+                            <span className="text-gray-700">
+                              <strong>{mutual.skill}</strong> to {mutual.learner}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-600 font-medium">You learn ←</span>
+                            <span className="text-gray-700">
+                              <strong>{mutual.skill}</strong> from {mutual.teacher}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ))}
+                    {match.mutual_skills.length > 5 && (
+                      <div className="text-xs text-green-600 mt-1">
+                        +{match.mutual_skills.length - 5} more skills to exchange
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
