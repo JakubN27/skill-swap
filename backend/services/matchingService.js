@@ -50,20 +50,20 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
       return []
     }
     
-    // Filter by search skill if provided
-    let filteredUsers = allUsers
-    if (searchSkill) {
-      const searchLower = searchSkill.toLowerCase()
-      filteredUsers = allUsers.filter(otherUser => {
-        const teachSkills = (otherUser.teach_skills || []).map(s => s.name.toLowerCase())
-        const learnSkills = (otherUser.learn_skills || []).map(s => s.name.toLowerCase())
-        const userName = (otherUser.name || '').toLowerCase()
-        
-        return teachSkills.some(skill => skill.includes(searchLower)) ||
-               learnSkills.some(skill => skill.includes(searchLower)) ||
-               userName.includes(searchLower)
-      })
-    }
+  // Filter by search skill if provided
+  let filteredUsers = allUsers
+  if (searchSkill) {
+    const searchLower = searchSkill.toLowerCase()
+    filteredUsers = allUsers.filter(otherUser => {
+      const teachSkills = (otherUser.teach_skills || []).map(s => s.name.toLowerCase())
+      const learnSkills = (otherUser.learn_skills || []).map(s => s.name.toLowerCase())
+      const userName = (otherUser.name || '').toLowerCase()
+      
+      return teachSkills.some(skill => skill.includes(searchLower)) ||
+             learnSkills.some(skill => skill.includes(searchLower)) ||
+             userName.includes(searchLower)
+    })
+  }
     
     // Calculate reciprocal scores
     const matches = filteredUsers.map(otherUser => {
