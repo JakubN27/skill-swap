@@ -7,10 +7,11 @@ export default function Layout({ session }) {
   const location = useLocation()
 
   const isActive = (path) => {
-    if (path === '/') {
+    const cleanPath = path.split('?')[0]
+    if (cleanPath === '/') {
       return location.pathname === '/'
     }
-    return location.pathname.startsWith(path)
+    return location.pathname.startsWith(cleanPath)
   }
 
   const authedLinks = [
@@ -21,7 +22,12 @@ export default function Layout({ session }) {
 
   const publicLinks = [
     { to: '/', label: 'Home' },
+  ]
+
+  const mobilePublicLinks = [
+    ...publicLinks,
     { to: '/login', label: 'Login' },
+    { to: '/login?mode=signup', label: 'Sign Up' },
   ]
   
   const handleSignOut = async () => {
@@ -68,12 +74,12 @@ export default function Layout({ session }) {
                 <>
                   <Link
                     to="/login"
-                    className="hidden sm:inline-flex items-center text-sm font-semibold text-white/70 hover:text-primary-100"
+                    className="hidden sm:inline-flex items-center text-sm font-semibold text-white/80 hover:text-primary-100"
                   >
-                    Sign In
+                    Login
                   </Link>
-                  <Link to="/login" className="btn-primary">
-                    Get Started
+                  <Link to="/login?mode=signup" className="btn-primary">
+                    Sign Up
                   </Link>
                 </>
               )}
@@ -81,7 +87,7 @@ export default function Layout({ session }) {
           </div>
           <div className="md:hidden pb-4">
             <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-white/80">
-              {(session ? authedLinks : publicLinks).map((link) => (
+              {(session ? authedLinks : mobilePublicLinks).map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}

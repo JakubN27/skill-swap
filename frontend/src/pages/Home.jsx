@@ -24,7 +24,7 @@ export default function Home() {
               onClick={() => navigate('/login')}
               className="btn-primary text-base md:text-lg"
             >
-              Join the beta waitlist
+              Sign up now
             </button>
             <button
               onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
@@ -97,13 +97,13 @@ export default function Home() {
 
           {/* CTA Section */}
           <div className="text-center mt-16">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to design your next breakthrough?</h2>
-            <p className="text-xl text-white/70 mb-8">Join a curated waitlist of builders, designers, and mentors shaping the SkillSwap community.</p>
+            <h2 className="text-3xl font-bold text-white mb-4">Ready to swap skills and grow together?</h2>
+            <p className="text-xl text-white/70 mb-8">Join a curated waitlist of mentors and learners who trade their strengths, elevate new abilities, and keep the exchange balanced.</p>
             <button
               onClick={() => navigate('/login')}
               className="btn-primary text-lg px-10 py-4"
             >
-              Reserve your spot
+              Join SkillSwap
             </button>
           </div>
         </div>
