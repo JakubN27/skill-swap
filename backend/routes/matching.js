@@ -1,4 +1,5 @@
 import express from 'express'
+import { supabase } from '../config/supabase.js'
 import { findMatches, createMatch, getUserMatches } from '../services/matchingService.js'
 
 export const matchingRouter = express.Router()
@@ -37,7 +38,7 @@ matchingRouter.post('/create', async (req, res) => {
       return res.status(400).json({ error: 'Both user IDs are required' })
     }
     
-    const match = await createMatch(userAId, userBId, score, mutualSkills)
+    const match = await createMatch(userAId, userBId, score || 0, mutualSkills || [])
     
     res.json({
       success: true,
@@ -71,6 +72,40 @@ matchingRouter.get('/user/:userId', async (req, res) => {
 })
 
 /**
+ * GET /api/matching/:matchId
+ * Get a specific match by ID
+ */
+matchingRouter.get('/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params
+
+    const { data, error } = await supabase
+      .from('matches')
+      .select(`
+        *,
+        user_a:users!matches_user_a_id_fkey(id, name, bio, teach_skills, learn_skills),
+        user_b:users!matches_user_b_id_fkey(id, name, bio, teach_skills, learn_skills)
+      `)
+      .eq('id', matchId)
+      .single()
+
+    if (error) throw error
+
+    if (!data) {
+      return res.status(404).json({ error: 'Match not found' })
+    }
+
+    res.json({
+      success: true,
+      match: data
+    })
+  } catch (error) {
+    console.error('Get match error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
  * PATCH /api/matching/:matchId/status
  * Update match status
  */
@@ -95,6 +130,31 @@ matchingRouter.patch('/:matchId/status', async (req, res) => {
     res.json({ success: true, match: data })
   } catch (error) {
     console.error('Update match status error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
+ * DELETE /api/matching/:matchId
+ * Delete a match
+ */
+matchingRouter.delete('/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params
+
+    const { error } = await supabase
+      .from('matches')
+      .delete()
+      .eq('id', matchId)
+
+    if (error) throw error
+
+    res.json({
+      success: true,
+      message: 'Match deleted successfully'
+    })
+  } catch (error) {
+    console.error('Delete match error:', error)
     res.status(500).json({ error: error.message })
   }
 })

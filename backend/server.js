@@ -4,6 +4,12 @@ import dotenv from 'dotenv'
 import { skillExtractionRouter } from './routes/skillExtraction.js'
 import { matchingRouter } from './routes/matching.js'
 import { embeddingsRouter } from './routes/embeddings.js'
+import { authRouter } from './routes/auth.js'
+import { usersRouter } from './routes/users.js'
+import { sessionsRouter } from './routes/sessions.js'
+import { messagesRouter } from './routes/messages.js'
+import { achievementsRouter } from './routes/achievements.js'
+import { aiRouter } from './routes/ai.js'
 
 dotenv.config()
 
@@ -14,15 +20,56 @@ const PORT = process.env.PORT || 3001
 app.use(cors())
 app.use(express.json())
 
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`)
+  next()
+})
+
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'SkillSwap API is running' })
+  res.json({ 
+    status: 'ok', 
+    message: 'SkillSwap API is running',
+    timestamp: new Date().toISOString()
+  })
+})
+
+// API Documentation
+app.get('/', (req, res) => {
+  res.json({
+    name: 'SkillSwap API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      users: '/api/users',
+      skills: '/api/skills',
+      matching: '/api/matching',
+      sessions: '/api/sessions',
+      messages: '/api/messages',
+      achievements: '/api/achievements',
+      ai: '/api/ai',
+      embeddings: '/api/embeddings'
+    },
+    docs: 'See /api/docs for detailed documentation'
+  })
 })
 
 // Routes
+app.use('/api/auth', authRouter)
+app.use('/api/users', usersRouter)
 app.use('/api/skills', skillExtractionRouter)
 app.use('/api/matching', matchingRouter)
+app.use('/api/sessions', sessionsRouter)
+app.use('/api/messages', messagesRouter)
+app.use('/api/achievements', achievementsRouter)
+app.use('/api/ai', aiRouter)
 app.use('/api/embeddings', embeddingsRouter)
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' })
+})
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -32,4 +79,6 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 SkillSwap API running on http://localhost:${PORT}`)
+  console.log(`📚 API Documentation: http://localhost:${PORT}`)
+  console.log(`❤️  Health check: http://localhost:${PORT}/health`)
 })
