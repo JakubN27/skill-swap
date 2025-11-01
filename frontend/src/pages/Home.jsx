@@ -6,22 +6,41 @@ export default function Home() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
+  const [error, setError] = useState('')
 
   const handleAuth = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
+
+    if (!supabase) {
+      setError('Supabase is not configured. Please check your .env.local file.')
+      setLoading(false)
+      return
+    }
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            emailRedirectTo: window.location.origin
+          }
+        })
         if (error) throw error
-        alert('Check your email for confirmation link!')
+        if (data?.user?.identities?.length === 0) {
+          setError('This email is already registered. Please sign in instead.')
+        } else {
+          alert('Success! Check your email for confirmation link.')
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       }
     } catch (error) {
-      alert(error.message)
+      console.error('Auth error:', error)
+      setError(error.message || 'An error occurred during authentication')
     } finally {
       setLoading(false)
     }
@@ -43,6 +62,20 @@ export default function Home() {
           <h2 className="text-2xl font-semibold mb-6">
             {isSignUp ? 'Create Account' : 'Sign In'}
           </h2>
+
+          {!supabase && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">
+                ⚠️ Supabase is not configured. Please add your credentials to <code className="bg-red-100 px-1 rounded">.env.local</code>
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
           
           <form onSubmit={handleAuth} className="space-y-4">
             <div>

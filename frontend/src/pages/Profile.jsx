@@ -17,6 +17,11 @@ export default function Profile() {
   const getProfile = async () => {
     try {
       setLoading(true)
+      if (!supabase) {
+        console.error('Supabase not configured')
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
 
       const { data, error } = await supabase
@@ -41,6 +46,11 @@ export default function Profile() {
     setLoading(true)
 
     try {
+      if (!supabase) {
+        alert('Supabase not configured')
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
 
       const { error } = await supabase

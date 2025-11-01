@@ -66,6 +66,29 @@
    - Add typing indicators
    - Message history
 
+---
+
+## 👥 Team Organization (Updated: 1 Nov 2025)
+
+**Team Size:** 3 developers + 1 designer  
+**Strategy:** Design-driven development with maximum parallelization
+
+### Team Roles:
+- **🎨 Designer:** UX/UI Lead & Presentation (Design system, mockups, slides)
+- **Developer 1:** Backend & AI + Matching (Express, Gemini, API, matching algorithm)
+- **Developer 2:** Frontend Lead (All pages, components, UI implementation)
+- **Developer 3:** Real-time & Gamification (Chat, skill legacy graph, badges/points)
+
+### Task Distribution:
+- See **[TEAM_PLAN.md](TEAM_PLAN.md)** for complete breakdown
+- See **[TASK_BOARD.md](TASK_BOARD.md)** for quick reference
+- See **[TEAM_REORG_SUMMARY.md](TEAM_REORG_SUMMARY.md)** for reorganization details
+
+### Key Change:
+Reorganized from 4 developers to 3 developers + 1 designer for better design consistency and presentation quality.
+
+---
+
 ### 🔗 Resources
 - Database Schema: `supabase/migrations/20251101000000_initial_schema.sql`
 - Database Docs: `docs/01_database_setup.md`
