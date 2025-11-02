@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import ForceGraph2D from 'react-force-graph-2d';
+
+const ZOOM_TO_FIT_DURATION = 700;
+const ZOOM_TO_FIT_PADDING = 240;
 
 export default function Legacy() {
   const navigate = useNavigate();
@@ -16,6 +19,10 @@ export default function Legacy() {
   const [highlightLinks, setHighlightLinks] = useState(new Map()); // Map to store link degrees
   const [hoveredNode, setHoveredNode] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const graphRef = useRef(null);
+  const containerRef = useRef(null);
+  const [hasCentered, setHasCentered] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const calculateConnections = useCallback((node) => {
     const first = new Set([node.id]);
@@ -155,10 +162,13 @@ export default function Legacy() {
       });
 
       // Transform data for ForceGraph2D
-      setGraphData({
+      const formattedGraph = {
         nodes: Array.from(nodes.values()),
         links: Array.from(links).map(({ source, target }) => ({ source, target }))
-      });
+      };
+
+      setGraphData(formattedGraph);
+      setHasCentered(false);
 
     } catch (err) {
       console.error('Error loading connections:', err);
@@ -172,6 +182,43 @@ export default function Legacy() {
   useEffect(() => {
     loadUserAndConnections();
   }, []);
+
+  const applyInitialView = useCallback(() => {
+    const fg = graphRef.current;
+    if (!fg) return;
+
+    try {
+      const { width, height } = containerRef.current?.getBoundingClientRect() ?? {
+        width: 0,
+        height: 0
+      };
+
+      const dynamicPadding = width && height
+        ? Math.max(width, height) * 0.18
+        : ZOOM_TO_FIT_PADDING;
+
+      fg.zoomToFit(ZOOM_TO_FIT_DURATION, dynamicPadding);
+      setHasCentered(true);
+    } catch (fitError) {
+      console.warn('Unable to zoom to fit legacy graph:', fitError);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!graphRef.current || !graphData.nodes?.length || hasCentered) return;
+
+    const rafId = requestAnimationFrame(applyInitialView);
+    const timeoutId = window.setTimeout(() => {
+      if (!hasCentered) {
+        requestAnimationFrame(applyInitialView);
+      }
+    }, 800);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [graphData, hasCentered, applyInitialView]);
 
   if (loading) {
     return (
@@ -190,18 +237,49 @@ export default function Legacy() {
   }
 
   return (
-    <div className="flex flex-col h-[80vh] m-4">
-      <h1 className="text-2xl mb-4 text-slate-100">Legacy View</h1>
-      <div className="bg-primary-950 rounded-lg flex-1 overflow-hidden">
+  <div className="mx-auto flex w-full max-w-none flex-col items-center gap-6 px-4 py-10">
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-4 text-4xl font-bold drop-shadow">
+          <span role="img" aria-label="Tree">🌳</span>
+          <h1 className="bg-gradient-to-r from-emerald-200 via-lime-100 to-emerald-300 bg-clip-text font-semibold tracking-wide text-transparent">
+            Legacy Tree
+          </h1>
+          <span role="img" aria-label="Tree">🌳</span>
+        </div>
+        <div className="mt-3 flex justify-center">
+          <div className="group relative inline-flex items-center">
+            <button
+              type="button"
+              onClick={() => setShowInfo(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/40 bg-white/10 text-sm font-semibold text-white shadow-sm transition hover:bg-white/20"
+              aria-label="Learn about the legacy tree"
+            >
+              ?
+            </button>
+            <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white opacity-0 transition group-hover:opacity-100">
+              What is my legacy tree?
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        ref={containerRef}
+        className="legacy-graph-container relative h-[70vh] w-full overflow-hidden rounded-2xl border-2 border-white/40 bg-gradient-to-br from-white/50 via-emerald-200/70 to-lime-200/70 shadow-lg"
+      >
         <ForceGraph2D
+          ref={graphRef}
           graphData={graphData}
           nodeRelSize={6}
-          backgroundColor="#020617"
+          backgroundColor="transparent"
+          style={{ width: '100%', height: '100%' }}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
           linkDirectionalParticles={2}
           linkDirectionalParticleSpeed={0.005}
           nodeLabel={null}
+          onEngineStop={() => {
+            requestAnimationFrame(applyInitialView);
+          }}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const isCurrentUser = node.isCurrentUser === true;
             
@@ -259,6 +337,40 @@ export default function Legacy() {
           linkWidth={link => highlightLinks.get(link) ? 2 : 1}
         />
       </div>
+      <div className="max-w-2xl text-center">
+        <p className="text-xl font-semibold text-white/90">See your impact</p>
+        <p className="mt-3 text-base text-white/80">
+          Watch your legacy tree grow with each person you skillswap with.
+        </p>
+      </div>
+
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-slate-900/95 p-6 text-left text-white shadow-2xl">
+            <div className="mb-4 flex items-start justify-between">
+              <h2 className="text-2xl font-semibold">What is the Legacy Tree?</h2>
+              <button
+                type="button"
+                onClick={() => setShowInfo(false)}
+                className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white transition hover:bg-white/20"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3 text-sm leading-relaxed text-white/90">
+              <p>
+                Your legacy tree visualises every skill-sharing connection you make. Each node is a person you&apos;ve helped or learned from, and the branches show how knowledge ripples through the community.
+              </p>
+              <p>
+                First-degree nodes are people you&apos;ve worked with directly. Second and third-degree nodes highlight how your impact extends beyond immediate collaborations as your partners continue sharing skills.
+              </p>
+              <p>
+                Keep skillswapping to watch new branches form—your legacy grows every time you teach, learn, or introduce someone to the platform.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
