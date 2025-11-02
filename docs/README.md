@@ -6,7 +6,7 @@
 
 ## 📚 Essential Documentation
 
-This folder contains all the core documentation for the SkillSwap project. Everything you need to understand, set up, and develop the platform.
+This documentation is organized into **13 comprehensive guides** for easy navigation:
 
 ### 🚀 Quick Start
 - **[QUICKSTART.md](./QUICKSTART.md)** - Get started in 5 minutes
@@ -22,50 +22,132 @@ This folder contains all the core documentation for the SkillSwap project. Every
 - **[DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)** - Database structure and relationships
 - **[GEMINI_INTEGRATION.md](./GEMINI_INTEGRATION.md)** - AI features and setup
 
-### 🎯 Feature Guides
-- **[MATCHING_ALGORITHM.md](./MATCHING_ALGORITHM.md)** - How matching works
-- **[CHAT_SYSTEM.md](./CHAT_SYSTEM.md)** - Chat implementation guide
-- **[PROFILE_SYSTEM.md](./PROFILE_SYSTEM.md)** - User profiles and avatars
+### 🚀 [QUICKSTART.md](./QUICKSTART.md)
+**Get Running in 5 Minutes**
+- Rapid setup guide
+- Environment configuration
+- Database initialization
+- Quick testing
+- First user setup
 
-### 🐛 Support
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
-
----
-
-## 📁 Documentation Structure
-
-```
-docs/
-├── README.md                    ← You are here
-│
-├── QUICKSTART.md               ← Start here for setup
-├── OVERVIEW.md                  ← Project overview
-├── SETUP.md                     ← Detailed setup guide
-├── ARCHITECTURE.md              ← System architecture
-├── DEVELOPMENT.md               ← Development workflow
-│
-├── API_REFERENCE.md             ← Complete API docs
-├── DATABASE_SCHEMA.md           ← Database structure
-├── GEMINI_INTEGRATION.md        ← AI features
-│
-├── MATCHING_ALGORITHM.md        ← Matching system
-├── CHAT_SYSTEM.md               ← Chat implementation
-├── PROFILE_SYSTEM.md            ← Profile features
-│
-└── TROUBLESHOOTING.md           ← Problem solving
-```
+👉 **Start here** for the fastest path to a working system!
 
 ---
 
-## 🎯 What This Project Does
+### 🛠️ [SETUP.md](./SETUP.md)
+**Complete Setup Guide**
+- Prerequisites and requirements
+- Detailed installation instructions
+- Environment configuration
+- Database setup and migrations
+- Service configuration (Supabase, TalkJS, Gemini)
+- Verification steps
+- Common setup issues and fixes
+
+👉 **Use this** for detailed setup instructions!
+
+---
+
+### 🏛️ [ARCHITECTURE.md](./ARCHITECTURE.md)
+**System Design & Technical Architecture**
+- System architecture diagrams
+- Component relationships
+- Data flow patterns
+- Technology choices and rationale
+- Database design philosophy
+- API design patterns
+- Frontend architecture
+- Security considerations
+
+👉 **Read this** to understand system design!
+
+---
+
+### 💻 [DEVELOPMENT.md](./DEVELOPMENT.md)
+**Development Workflow & Guidelines**
+- Project structure
+- Development workflow
+- Code organization
+- Testing approach
+- Git workflow
+- Deployment process
+- Contributing guidelines
+- Code style guide
+
+👉 **Follow this** for development best practices!
+
+---
+
+### 🐛 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+**Common Issues & Solutions**
+- Quick diagnostics
+- Port conflicts
+- Database connection errors
+- Chat and conversations issues
+- Authentication problems
+- API and backend debugging
+- Frontend debugging
+- Performance issues
+
+👉 **Check here** when something breaks!
 
 **SkillSwap** is a platform that connects people who want to exchange skills and knowledge. Think "language exchange" but for any skill.
 
-### Core Features
-1. **Smart Matching** - AI-powered algorithm finds compatible learning partners
-2. **Real-time Chat** - Built-in messaging with TalkJS
-3. **Profile System** - Skills, bio, personality traits, and avatars
-4. **Session Tracking** - Track learning progress and completed sessions
+### 🌐 [API_REFERENCE.md](./API_REFERENCE.md)
+**Complete API Documentation**
+- All API endpoints
+- Request/response examples
+- Authentication flow
+- Error codes and handling
+- Rate limits
+- Testing with curl
+- User, matching, chat, and AI endpoints
+
+👉 **Reference this** when working with the API!
+
+---
+
+### 🗄️ [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)
+**Database Structure & Relationships**
+- Table definitions
+- Column types and constraints
+- Indexes and performance
+- Relationships and foreign keys
+- JSONB structures
+- Storage buckets
+- Row Level Security policies
+- Example queries
+
+👉 **Consult this** for database work!
+
+---
+
+### 🌱 [SEEDING.md](./SEEDING.md)
+**Database Seeding & Test Data**
+- Seed script usage guide
+- Command-line options
+- Generated data details
+- 70+ skills across 5 categories
+- Realistic user profiles
+- Match generation
+- Performance metrics
+- Troubleshooting seed issues
+
+👉 **Use this** to populate test data!
+
+---
+
+### 🤖 [GEMINI_INTEGRATION.md](./GEMINI_INTEGRATION.md)
+**Google Gemini AI Integration**
+- Gemini API setup
+- Skill extraction process
+- Learning plan generation
+- Session summary creation
+- Motivational nudge feature
+- Error handling and fallback
+- Performance considerations
+
+👉 **Read this** if working with AI features!
 
 ---
 

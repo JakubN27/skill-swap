@@ -1,6 +1,39 @@
 import { supabase } from '../config/supabase.js'
 import { textModel } from '../config/gemini.js'
 
+// In-memory cache for AI analysis results (TTL: 5 minutes)
+const analysisCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function getCachedAnalysis(userId, bio) {
+  const cacheKey = `${userId}-${bio?.substring(0, 50)}` // Use user ID + bio snippet as key
+  const cached = analysisCache.get(cacheKey)
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data
+  }
+  
+  return null
+}
+
+function setCachedAnalysis(userId, bio, analysis) {
+  const cacheKey = `${userId}-${bio?.substring(0, 50)}`
+  analysisCache.set(cacheKey, {
+    data: analysis,
+    timestamp: Date.now()
+  })
+  
+  // Clean up old cache entries periodically
+  if (analysisCache.size > 1000) {
+    const now = Date.now()
+    for (const [key, value] of analysisCache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        analysisCache.delete(key)
+      }
+    }
+  }
+}
+
 /**
  * Analyze and extract skills from user profile using Gemini
  */
@@ -11,129 +44,56 @@ async function analyzeProfileSkills(profile) {
   }
 
   try {
+    // Check cache first
+    const cachedAnalysis = getCachedAnalysis(profile.id, profile.bio)
+    if (cachedAnalysis) {
+      return cachedAnalysis
+    }
+    
     const prompt = `
-    Analyze the following user profile and extract relevant skills for a skill-sharing platform:
-    Bio: ${profile.bio || ''}
+    Analyze the following user profile for a skill-sharing platform:
+    
+    Bio: ${profile.bio || 'No bio provided'}
     Teaching Skills: ${JSON.stringify(profile.teach_skills || [])}
     Learning Skills: ${JSON.stringify(profile.learn_skills || [])}
 
     Please evaluate:
-    1. The depth of expertise in teaching skills (score 0-1)
-    2. The clarity of learning goals (score 0-1)
-    3. The potential for reciprocal learning relationships
+    1. **Teaching Expertise** (0-1): How well does their profile demonstrate expertise in what they want to teach?
+    2. **Learning Clarity** (0-1): How clear and genuine are their learning goals?
+    3. **Profile Quality** (0-1): Overall bio quality - is it friendly, professional, and welcoming?
+       - Penalize if: rude, hostile, discriminatory, arrogant, overly negative, disrespectful
+       - Reward if: friendly, humble, enthusiastic, respectful, genuine
+    4. **Reciprocal Potential** (array): Any specific skills that would make them good for teaching/learning exchanges
     
-    Return the analysis in JSON format.
+    IMPORTANT: If the bio contains hostile, discriminatory, or inappropriate content, set profile_quality to 0-0.3.
+    If the bio is friendly and welcoming, set profile_quality to 0.7-1.0.
+    
+    Return ONLY a JSON object with this exact format (no markdown, no code blocks):
+    {"teaching_expertise": 0.8, "learning_clarity": 0.7, "profile_quality": 0.9, "reciprocal_potential": []}
     `
 
     const result = await textModel.generateContent(prompt)
     const response = await result.response
-    const analysis = JSON.parse(response.text())
+    let text = response.text()
     
-    return {
-      teaching_expertise: analysis.teaching_expertise || 0,
-      learning_clarity: analysis.learning_clarity || 0,
-      reciprocal_potential: analysis.reciprocal_potential || []
-    }
-  } catch (error) {
-    console.error('Error analyzing profile with Gemini:', error)
-    return null
-  }
-}
-
-/**
- * Analyze compatibility between two users using Gemini AI
- * Considers bio, personality traits, and behavioral patterns
- */
-async function analyzeCompatibilityWithAI(userA, userB) {
-  if (!textModel) {
-    console.warn('Gemini API not configured - skipping AI compatibility analysis')
-    return null
-  }
-
-  try {
-    const prompt = `
-You are an expert matchmaking AI analyzing compatibility between two users on a skill-sharing platform.
-
-USER A PROFILE:
-Name: ${userA.name || 'User A'}
-Bio: ${userA.bio || 'No bio provided'}
-Teaching Skills: ${JSON.stringify(userA.teach_skills || [])}
-Learning Skills: ${JSON.stringify(userA.learn_skills || [])}
-Personality: ${userA.personality_type || 'not specified'}
-Daily Rhythm: ${userA.daily_rhythm || 'not specified'}
-Spirit Animal: ${userA.spirit_animal || 'not specified'}
-Favorite Ice Cream: ${userA.favorite_ice_cream || 'not specified'}
-
-USER B PROFILE:
-Name: ${userB.name || 'User B'}
-Bio: ${userB.bio || 'No bio provided'}
-Teaching Skills: ${JSON.stringify(userB.teach_skills || [])}
-Learning Skills: ${JSON.stringify(userB.learn_skills || [])}
-Personality: ${userB.personality_type || 'not specified'}
-Daily Rhythm: ${userB.daily_rhythm || 'not specified'}
-Spirit Animal: ${userB.spirit_animal || 'not specified'}
-Favorite Ice Cream: ${userB.favorite_ice_cream || 'not specified'}
-
-Analyze the following aspects and provide scores from 0 to 1:
-
-1. **Bio Compatibility** (0-1): Analyze writing style, communication approach, interests, and values expressed in the bios. Look for complementary perspectives, shared passions, or mutual interests that would facilitate learning together.
-
-2. **Learning Style Match** (0-1): Based on the bios and personality traits, assess whether their learning and teaching styles would complement each other. Consider pace, depth, and approach to knowledge sharing.
-
-3. **Personality Synergy** (0-1): Evaluate how well their personality traits (introvert/extrovert) and daily rhythms (early bird/night owl) align for productive collaboration. Note: similar personalities can work well, and complementary personalities can also be highly compatible.
-
-4. **Communication Compatibility** (0-1): Assess how well they would communicate based on their bios, personality types, and expressed interests. Look for indicators of clear communication, mutual respect, and collaborative potential.
-
-5. **Motivation Alignment** (0-1): Evaluate whether their goals, aspirations, and reasons for learning (as expressed in bios) are compatible and would support sustained engagement.
-
-6. **Cultural and Interest Overlap** (0-1): Analyze any shared interests, cultural references, hobbies, or life experiences mentioned in their bios that could strengthen their connection.
-
-Additionally provide:
-- **compatibility_insights**: Array of 2-3 specific observations about why they would (or wouldn't) work well together
-- **potential_challenges**: Array of 1-2 potential challenges in their learning partnership
-- **recommendation_strength**: "strong", "moderate", or "weak"
-
-Return ONLY a valid JSON object in this exact format:
-{
-  "bio_compatibility": 0.85,
-  "learning_style_match": 0.78,
-  "personality_synergy": 0.92,
-  "communication_compatibility": 0.88,
-  "motivation_alignment": 0.75,
-  "cultural_overlap": 0.70,
-  "compatibility_insights": ["insight 1", "insight 2"],
-  "potential_challenges": ["challenge 1"],
-  "recommendation_strength": "strong"
-}
-    `.trim()
-
-    const result = await textModel.generateContent(prompt)
-    const response = await result.response
-    let text = response.text().trim()
-    
-    // Handle markdown code blocks
-    if (text.startsWith('```json')) {
-      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '')
-    } else if (text.startsWith('```')) {
-      text = text.replace(/```\n?/g, '')
-    }
+    // Remove markdown code blocks if present
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     
     const analysis = JSON.parse(text)
     
-    // Validate and ensure all required fields exist
-    return {
-      bio_compatibility: analysis.bio_compatibility || 0.5,
-      learning_style_match: analysis.learning_style_match || 0.5,
-      personality_synergy: analysis.personality_synergy || 0.5,
-      communication_compatibility: analysis.communication_compatibility || 0.5,
-      motivation_alignment: analysis.motivation_alignment || 0.5,
-      cultural_overlap: analysis.cultural_overlap || 0.5,
-      compatibility_insights: analysis.compatibility_insights || [],
-      potential_challenges: analysis.potential_challenges || [],
-      recommendation_strength: analysis.recommendation_strength || 'moderate'
+    const enrichedAnalysis = {
+      teaching_expertise: analysis.teaching_expertise || 0.5,
+      learning_clarity: analysis.learning_clarity || 0.5,
+      profile_quality: analysis.profile_quality || 0.5,
+      reciprocal_potential: analysis.reciprocal_potential || []
     }
+    
+    // Cache the analysis result
+    setCachedAnalysis(profile.id, profile.bio, enrichedAnalysis)
+    
+    return enrichedAnalysis
   } catch (error) {
-    console.error('Error analyzing compatibility with Gemini:', error)
+    // Return null on error - matching will fall back to basic scoring
     return null
   }
 }
@@ -210,11 +170,24 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
       })
     }
     
-    // Process matches with enhanced AI-powered analysis
-    const processedMatches = await Promise.all(
-      filteredUsers.map(async otherUser => {
-        try {
-          // Calculate basic skill match scores
+    // Cache user analysis to avoid repeated API calls
+    const userAnalysis = await analyzeProfileSkills(user)
+    
+    // Process matches in parallel batches for better performance
+    const BATCH_SIZE = 10 // Process 10 potential matches at a time
+    const processedMatches = []
+    
+    for (let batchStart = 0; batchStart < filteredUsers.length; batchStart += BATCH_SIZE) {
+      const batch = filteredUsers.slice(batchStart, batchStart + BATCH_SIZE)
+      
+      // Process batch in parallel (cache will speed this up significantly)
+      const batchResults = await Promise.all(
+        batch.map(async (otherUser) => {
+          try {
+            // Analyze other user's profile (will use cache if available)
+            const otherUserAnalysis = await analyzeProfileSkills(otherUser)
+
+        // Calculate skill match scores
           const scoreAtoB = calculateMatchScore(
             user.teach_skills || [],
             otherUser.learn_skills || []
@@ -225,70 +198,33 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
             user.learn_skills || []
           )
           
-          const skillScore = (scoreAtoB + scoreBtoA) / 2
-          
-          // Calculate basic personality compatibility
+          // Calculate personality compatibility
           const personalityScore = calculatePersonalityScore(user, otherUser)
           
-          // Get AI-powered compatibility analysis (if available)
-          const aiCompatibility = await analyzeCompatibilityWithAI(user, otherUser)
+          // Calculate base skill match score
+          const baseSkillScore = (scoreAtoB + scoreBtoA) / 2
           
-          let finalScore
-          let compatibilityBreakdown = {}
+          // Apply AI-enhanced scoring if available
+          let finalScore = baseSkillScore * 0.5 + personalityScore * 0.2
           
-          if (aiCompatibility) {
-            // Enhanced scoring with AI analysis
-            // Weight distribution:
-            // - Skill Match: 40%
-            // - AI Bio Compatibility: 15%
-            // - AI Learning Style: 15%
-            // - Basic Personality: 10%
-            // - AI Personality Synergy: 10%
-            // - AI Communication: 5%
-            // - AI Motivation: 5%
+          if (userAnalysis && otherUserAnalysis) {
+            // AI enhancement factors:
+            // 1. Teaching expertise (how good they are at what they teach)
+            // 2. Learning clarity (how clear their learning goals are)
+            // 3. Profile quality (friendly tone, no hostility) - PENALTIES APPLIED HERE
+            const teachingQuality = userAnalysis.teaching_expertise || 0.5
+            const learningReadiness = otherUserAnalysis.learning_clarity || 0.5
+            const profileQuality = otherUserAnalysis.profile_quality || 0.5
             
-            finalScore = (
-              skillScore * 0.40 +
-              aiCompatibility.bio_compatibility * 0.15 +
-              aiCompatibility.learning_style_match * 0.15 +
-              personalityScore * 0.10 +
-              aiCompatibility.personality_synergy * 0.10 +
-              aiCompatibility.communication_compatibility * 0.05 +
-              aiCompatibility.motivation_alignment * 0.05
-            )
+            // Average of all AI factors
+            const aiBoost = (teachingQuality + learningReadiness + profileQuality) / 3
             
-            compatibilityBreakdown = {
-              skill_match: skillScore,
-              basic_personality: personalityScore,
-              ai_bio_compatibility: aiCompatibility.bio_compatibility,
-              ai_learning_style: aiCompatibility.learning_style_match,
-              ai_personality_synergy: aiCompatibility.personality_synergy,
-              ai_communication: aiCompatibility.communication_compatibility,
-              ai_motivation: aiCompatibility.motivation_alignment,
-              ai_cultural_overlap: aiCompatibility.cultural_overlap,
-              insights: aiCompatibility.compatibility_insights,
-              challenges: aiCompatibility.potential_challenges,
-              recommendation: aiCompatibility.recommendation_strength
-            }
-            
-            console.log(`[Match] ${user.name} ↔ ${otherUser.name}:`)
-            console.log(`  Skill: ${(skillScore * 100).toFixed(1)}% | Personality: ${(personalityScore * 100).toFixed(1)}%`)
-            console.log(`  AI Bio: ${(aiCompatibility.bio_compatibility * 100).toFixed(1)}% | AI Learning: ${(aiCompatibility.learning_style_match * 100).toFixed(1)}%`)
-            console.log(`  Final Score: ${(finalScore * 100).toFixed(1)}% | Recommendation: ${aiCompatibility.recommendation_strength}`)
-          } else {
-            // Fallback to basic scoring without AI
-            finalScore = skillScore * 0.70 + personalityScore * 0.30
-            
-            compatibilityBreakdown = {
-              skill_match: skillScore,
-              basic_personality: personalityScore,
-              ai_enabled: false
-            }
-            
-            console.log(`[Match] ${user.name} ↔ ${otherUser.name} (Basic):`)
-            console.log(`  Skill: ${(skillScore * 100).toFixed(1)}% | Personality: ${(personalityScore * 100).toFixed(1)}%`)
-            console.log(`  Final Score: ${(finalScore * 100).toFixed(1)}%`)
+            // Add AI boost (30% weight when available - increased to make bio quality more impactful)
+            finalScore += aiBoost * 0.3
           }
+          
+          // Normalize to 0-1 range
+          finalScore = Math.min(Math.max(finalScore, 0), 1)
           
           // Find mutual skills
           const sharedSkills = findMutualSkills(user, otherUser)
@@ -305,44 +241,37 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
             reciprocal_score: finalScore,
             mutual_skills: sharedSkills,
             personality_compatibility: personalityScore,
-            compatibility_breakdown: compatibilityBreakdown
+            skill_analysis: {
+              user: userAnalysis,
+              match: otherUserAnalysis
+            }
           }
         } catch (error) {
           console.error('Error processing match:', error)
           return null
         }
       })
-    )
-
-    // Filter out failed matches and sort results with intelligent prioritization
-    const validMatches = processedMatches.filter(Boolean)
-    
-    validMatches.sort((a, b) => {
-      // 1. Prioritize AI "strong" recommendations
-      const aStrong = a.compatibility_breakdown?.recommendation === 'strong'
-      const bStrong = b.compatibility_breakdown?.recommendation === 'strong'
-      if (aStrong && !bStrong) return -1
-      if (!aStrong && bStrong) return 1
+      )
       
-      // 2. Prioritize matches with mutual skills (reciprocal learning)
+      // Add batch results to main array
+      processedMatches.push(...batchResults)
+      
+      // Small delay between batches (cache makes this much faster)
+      if (textModel && batchStart + BATCH_SIZE < filteredUsers.length) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+    }
+
+    // Filter out failed matches and sort results
+    const validMatches = processedMatches.filter(Boolean)
+    validMatches.sort((a, b) => {
+      // Prioritize matches with mutual skills
       if (a.mutual_skills.length > 0 && b.mutual_skills.length === 0) return -1
       if (a.mutual_skills.length === 0 && b.mutual_skills.length > 0) return 1
       
-      // 3. Sort by final compatibility score
-      if (Math.abs(b.reciprocal_score - a.reciprocal_score) > 0.01) {
-        return b.reciprocal_score - a.reciprocal_score
-      }
-      
-      // 4. Tie-breaker: prefer more mutual skills
-      if (a.mutual_skills.length !== b.mutual_skills.length) {
-        return b.mutual_skills.length - a.mutual_skills.length
-      }
-      
-      // 5. Final tie-breaker: higher skill match score
-      return b.score_a_to_b + b.score_b_to_a - (a.score_a_to_b + a.score_b_to_a)
+      // Then sort by final score
+      return b.reciprocal_score - a.reciprocal_score
     })
-    
-    console.log(`[Matching] Found ${validMatches.length} matches for user ${userId}, returning top ${limit}`)
     
     // Return top matches
     return validMatches.slice(0, limit)
@@ -356,12 +285,7 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
  * Calculate match score between teach skills and learn skills
  */
 function calculateMatchScore(teachSkills, learnSkills) {
-  // Log skills for debugging
-  console.log('Teaching skills:', teachSkills)
-  console.log('Learning skills:', learnSkills)
-  
   if (!teachSkills?.length || !learnSkills?.length) {
-    console.log('No skills to match')
     return 0
   }
   
@@ -381,13 +305,11 @@ function calculateMatchScore(teachSkills, learnSkills) {
       if (learnName === teachName) {
         totalScore += 1.0
         matchCount++
-        console.log(`Exact match found: ${teachName}`)
       }
       // Category match (partial score)
       else if (learnSkill.category && teachSkill.category && 
                learnSkill.category === teachSkill.category) {
         totalScore += 0.3
-        console.log(`Category match found: ${learnSkill.category}`)
       }
       // Similar skill names (contains)
       else if (
@@ -396,7 +318,6 @@ function calculateMatchScore(teachSkills, learnSkills) {
       ) {
         totalScore += 0.7
         matchCount++
-        console.log(`Similar skills found: ${teachName} - ${learnName}`)
       }
     }
   }
@@ -404,102 +325,29 @@ function calculateMatchScore(teachSkills, learnSkills) {
   // Normalize score (0-1 range)
   const maxPossibleScore = Math.max(teachSkills.length, learnSkills.length)
   const finalScore = maxPossibleScore > 0 ? totalScore / maxPossibleScore : 0
-  console.log(`Match score: ${finalScore} (total: ${totalScore}, max: ${maxPossibleScore})`)
   return finalScore
 }
 
 /**
  * Calculate personality compatibility score between two users
- * Enhanced with personality type, daily rhythm, and interest-based matching
  */
 function calculatePersonalityScore(userA, userB) {
   try {
-    let scores = []
+    let score = 0.5 // Base score
     
-    // 1. Personality Type Compatibility (introvert/extrovert)
+    // Personality type compatibility (introvert vs extrovert)
     if (userA.personality_type && userB.personality_type) {
-      // Both introverts or both extroverts = good match
-      // One of each can also work well (complementary)
-      const sameType = userA.personality_type === userB.personality_type
-      scores.push(sameType ? 0.9 : 0.7) // Similar or complementary both work
+      // Same personality type = more compatible
+      score += (userA.personality_type === userB.personality_type) ? 0.2 : 0.1
     }
     
-    // 2. Daily Rhythm Compatibility (early bird/night owl)
+    // Daily rhythm compatibility (early bird vs night owl)
     if (userA.daily_rhythm && userB.daily_rhythm) {
-      // Matching rhythms is important for scheduling sessions
-      const sameRhythm = userA.daily_rhythm === userB.daily_rhythm
-      scores.push(sameRhythm ? 1.0 : 0.4) // Same rhythm is strongly preferred
+      // Same daily rhythm = easier to schedule sessions
+      score += (userA.daily_rhythm === userB.daily_rhythm) ? 0.3 : 0
     }
     
-    // 3. Spirit Animal Similarity (fun personality indicator)
-    if (userA.spirit_animal && userB.spirit_animal) {
-      const sameAnimal = userA.spirit_animal.toLowerCase() === userB.spirit_animal.toLowerCase()
-      scores.push(sameAnimal ? 0.8 : 0.6) // Bonus for shared spirit animal
-    }
-    
-    // 4. Ice Cream Preference (lighthearted compatibility indicator)
-    if (userA.favorite_ice_cream && userB.favorite_ice_cream) {
-      const sameFlavor = userA.favorite_ice_cream.toLowerCase() === userB.favorite_ice_cream.toLowerCase()
-      scores.push(sameFlavor ? 0.7 : 0.6) // Small bonus for shared taste
-    }
-    
-    // 5. Bio length and detail level (indicates engagement)
-    const bioLengthA = (userA.bio || '').length
-    const bioLengthB = (userB.bio || '').length
-    if (bioLengthA > 0 && bioLengthB > 0) {
-      // Users with detailed bios tend to be more engaged
-      const avgLength = (bioLengthA + bioLengthB) / 2
-      const detailScore = Math.min(avgLength / 200, 1.0) // Max score at 200+ chars
-      scores.push(0.5 + (detailScore * 0.5)) // 0.5 to 1.0 range
-    }
-    
-    // 6. Fallback to personality traits if available (from old system)
-    const traitsA = userA.personality_traits || {}
-    const traitsB = userB.personality_traits || {}
-    
-    if (Object.keys(traitsA).length > 0 && Object.keys(traitsB).length > 0) {
-      const compatibilityScores = {
-        openness: 1 - Math.abs((traitsA.openness || 3) - (traitsB.openness || 3)) / 5,
-        conscientiousness: 1 - Math.abs((traitsA.conscientiousness || 3) - (traitsB.conscientiousness || 3)) / 5,
-        extraversion: 1 - Math.abs((traitsA.extraversion || 3) - (traitsB.extraversion || 3)) / 5,
-        agreeableness: 1 - Math.abs((traitsA.agreeableness || 3) - (traitsB.agreeableness || 3)) / 5,
-        neuroticism: 1 - Math.abs((traitsA.neuroticism || 3) - (traitsB.neuroticism || 3)) / 5
-      }
-      
-      const weights = {
-        openness: 0.3,
-        conscientiousness: 0.2,
-        extraversion: 0.1,
-        agreeableness: 0.3,
-        neuroticism: 0.1
-      }
-      
-      let traitScore = 0
-      for (const trait in weights) {
-        if (compatibilityScores[trait] !== undefined) {
-          traitScore += compatibilityScores[trait] * weights[trait]
-        }
-      }
-      scores.push(traitScore)
-    }
-    
-    // Calculate average of all available scores
-    if (scores.length === 0) {
-      return 0.5 // Default neutral score
-    }
-    
-    const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
-    
-    console.log(`Personality compatibility scores:`, {
-      individual_scores: scores,
-      average: avgScore,
-      userA_type: userA.personality_type,
-      userB_type: userB.personality_type,
-      userA_rhythm: userA.daily_rhythm,
-      userB_rhythm: userB.daily_rhythm
-    })
-    
-    return avgScore
+    return Math.min(score, 1) // Cap at 1
   } catch (error) {
     console.error('Error calculating personality score:', error)
     return 0.5 // Default to neutral score on error
@@ -621,7 +469,8 @@ export async function createMatch(userAId, userBId, score, mutualSkills) {
 }
 
 /**
- * Get user's matches
+ * Get user's matches with recalculated scores
+ * This ensures scores always reflect the current state of user profiles
  */
 export async function getUserMatches(userId) {
   try {
@@ -629,14 +478,120 @@ export async function getUserMatches(userId) {
       .from('matches')
       .select(`
         *,
-        user_a:users!matches_user_a_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills),
-        user_b:users!matches_user_b_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills)
+        user_a:users!matches_user_a_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills, personality_type, daily_rhythm),
+        user_b:users!matches_user_b_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills, personality_type, daily_rhythm)
       `)
       .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
       .order('created_at', { ascending: false })
     
     if (error) throw error
-    return data || []
+    
+    if (!data || data.length === 0) {
+      return []
+    }
+    
+    // Process matches in parallel batches for better performance
+    const BATCH_SIZE = 5 // Process 5 matches at a time
+    const matchesWithUpdatedScores = []
+    
+    for (let batchStart = 0; batchStart < data.length; batchStart += BATCH_SIZE) {
+      const batch = data.slice(batchStart, batchStart + BATCH_SIZE)
+      
+      // Process batch in parallel
+      const batchResults = await Promise.all(
+        batch.map(async (match) => {
+          const userA = match.user_a
+          const userB = match.user_b
+          
+          // Determine who is the current user and who is the other user
+          const isUserA = userA?.id === userId
+          const currentUser = isUserA ? userA : userB
+          const otherUser = isUserA ? userB : userA
+          
+          // Skip if user data is missing
+          if (!currentUser || !otherUser) {
+            console.warn(`Missing user data for match ${match.id}`)
+            return match
+          }
+          
+          try {
+            // Get AI analysis for both users (will use cache if available)
+            const [currentUserAnalysis, otherUserAnalysis] = await Promise.all([
+              analyzeProfileSkills(currentUser),
+              analyzeProfileSkills(otherUser)
+            ])
+            
+            // Recalculate skill scores FROM THE PERSPECTIVE OF THE CURRENT USER
+            const scoreCurrentToOther = calculateMatchScore(
+              currentUser.teach_skills || [],
+              otherUser.learn_skills || []
+            )
+            
+            const scoreOtherToCurrent = calculateMatchScore(
+              otherUser.teach_skills || [],
+              currentUser.learn_skills || []
+            )
+            
+            // Recalculate personality compatibility
+            const personalityScore = calculatePersonalityScore(currentUser, otherUser)
+            
+            // Calculate updated final score with AI enhancement (personalized to current user)
+            const baseSkillScore = (scoreCurrentToOther + scoreOtherToCurrent) / 2
+            let updatedScore = baseSkillScore * 0.5 + personalityScore * 0.2
+            
+            if (currentUserAnalysis && otherUserAnalysis) {
+              // Apply AI boost based on:
+              // 1. Current user's teaching quality
+              // 2. Other user's learning readiness
+              // 3. Other user's profile quality (friendly tone, no hostility) - PENALTIES HERE
+              const teachingQuality = currentUserAnalysis.teaching_expertise || 0.5
+              const learningReadiness = otherUserAnalysis.learning_clarity || 0.5
+              const profileQuality = otherUserAnalysis.profile_quality || 0.5
+              
+              const aiBoost = (teachingQuality + learningReadiness + profileQuality) / 3
+              updatedScore += aiBoost * 0.3
+            }
+            
+            updatedScore = Math.min(Math.max(updatedScore, 0), 1)
+            
+            // Recalculate mutual skills
+            const updatedMutualSkills = findMutualSkills(currentUser, otherUser)
+            
+            return {
+              ...match,
+              score: updatedScore, // Override with recalculated score (personalized)
+              mutual_skills: updatedMutualSkills, // Override with recalculated mutual skills
+              score_current_to_other: scoreCurrentToOther,
+              score_other_to_current: scoreOtherToCurrent,
+              personality_compatibility: personalityScore,
+              skill_analysis: {
+                current_user: currentUserAnalysis,
+                other_user: otherUserAnalysis
+              },
+              // Keep original score for reference
+              original_score: match.score
+            }
+          } catch (calcError) {
+            console.error(`Error recalculating score for match ${match.id}:`, calcError)
+            // Return original match if calculation fails
+            return match
+          }
+        })
+      )
+      
+      // Add batch results to main array
+      matchesWithUpdatedScores.push(...batchResults)
+      
+      // Small delay between batches to avoid rate limiting (most will be cached anyway)
+      if (textModel && batchStart + BATCH_SIZE < data.length) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+    
+    // Sort by updated score (highest first)
+    matchesWithUpdatedScores.sort((a, b) => (b.score || 0) - (a.score || 0))
+    
+    return matchesWithUpdatedScores
   } catch (error) {
     console.error('Error getting user matches:', error)
     throw error
