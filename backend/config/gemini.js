@@ -14,10 +14,9 @@ if (!apiKey) {
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
-// Text generation model with stable API configuration
+// Text generation model - using gemini-2.0-flash (stable, fast, available in v1 API)
 export const textModel = genAI ? genAI.getGenerativeModel({
-  model: 'gemini-pro',
-  apiVersion: 'v1',  // Use stable API version
+  model: 'gemini-2.0-flash-exp',  // Fastest model available
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
@@ -27,8 +26,7 @@ export const textModel = genAI ? genAI.getGenerativeModel({
 
 // Embedding model with stable API configuration
 export const embeddingModel = genAI ? genAI.getGenerativeModel({
-  model: 'embedding-001',
-  apiVersion: 'v1'  // Use stable API version
+  model: 'text-embedding-004'  // Current embedding model
 }) : null
 
 // Generate embeddings for text
