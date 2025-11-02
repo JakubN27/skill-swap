@@ -11,7 +11,8 @@
 6. [API & Backend Issues](#api--backend-issues)
 7. [Frontend & UI Issues](#frontend--ui-issues)
 8. [TalkJS Integration Issues](#talkjs-integration-issues)
-9. [Development Environment](#development-environment)
+9. [Gemini AI Integration Issues](#gemini-ai-integration-issues)
+10. [Development Environment](#development-environment)
 
 ---
 
@@ -382,6 +383,34 @@ Backend now handles this gracefully:
 
 ## API & Backend Issues
 
+### Issue: Match Scores Not Updating After Profile Changes
+
+**Symptoms:**
+- Update your profile (add/remove skills, change bio)
+- Match scores for existing matches don't change
+- Potential matches show updated scores, but "Your Current Matches" don't
+
+**Cause:** Match scores are recalculated dynamically when loading matches, but you need to refresh.
+
+**Fix:**
+1. After updating your profile, go to the Matches page
+2. Click the **"Refresh"** button in the "Your Current Matches" section
+3. Scores should now reflect your updated profile
+
+**Technical Details:**
+- Match scores are now calculated dynamically based on current profiles
+- The stored score in the database is kept for historical reference
+- Scores consider: skill compatibility (70%) + personality match (30%)
+- See [MATCH_SCORE_UPDATES.md](./MATCH_SCORE_UPDATES.md) for complete details
+
+**Verify Fix:**
+```bash
+# Check backend logs when loading matches
+# Should see: "Match xyz: Updated score from 0.65 to 0.82"
+```
+
+---
+
 ### Backend Not Starting
 
 **Check:**
@@ -514,6 +543,178 @@ console.log(window.Talk)
 console.log('[Chat] Container:', chatboxEl.current)
 console.log('[Chat] User:', user)
 console.log('[Chat] Match:', match)
+```
+
+---
+
+## Gemini AI Integration Issues
+
+### Issue: Gemini API 404 Error (model not found for v1beta)
+
+**Symptoms:**
+```
+Error: [GoogleGenerativeAI Error]: Error fetching from 
+https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:
+generateContent: [404 Not Found] models/gemini-pro is not found for API version v1beta
+```
+
+OR
+
+```
+Error: models/gemini-1.5-flash is not found for API version v1beta
+```
+
+**Cause:** The Google Generative AI SDK defaults to `v1beta` API, but many models are only available in the stable `v1` API.
+
+**Fix:** Use the full model path with `models/` prefix to force v1 API usage.
+
+**Solution in `/backend/config/gemini.js`:**
+```javascript
+// ✅ CORRECT - Use full model path for v1 API
+export const textModel = genAI ? genAI.getGenerativeModel({
+  model: 'models/gemini-1.5-pro',  // Full path forces v1 API
+  generationConfig: {
+    temperature: 0.7,
+    topP: 0.8,
+    topK: 40
+  }
+}) : null
+
+// ❌ INCORRECT - Short name uses v1beta by default
+export const textModel = genAI ? genAI.getGenerativeModel({
+  model: 'gemini-pro',  // Defaults to v1beta
+  // ...
+}) : null
+
+// ❌ ALSO INCORRECT - Still uses v1beta
+export const textModel = genAI ? genAI.getGenerativeModel({
+  model: 'gemini-1.5-flash',  // Defaults to v1beta
+  // ...
+}) : null
+```
+
+**Available Models:**
+- `models/gemini-1.5-pro` - Most capable, recommended for production
+- `models/gemini-1.5-flash` - Faster, good for development
+- `models/embedding-001` - For embeddings
+
+**Verification:**
+```bash
+# Restart backend
+cd backend
+npm run dev
+
+# Should see: ✅ Gemini API configured successfully
+# No 404 errors in console when creating matches
+```
+
+---
+
+### Issue: Gemini API Key Not Set
+
+**Symptoms:**
+```
+⚠️  GEMINI_API_KEY not set. AI features will be disabled.
+```
+
+**Fix:**
+1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Add to `/backend/.env`:
+   ```bash
+   GEMINI_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXX
+   ```
+3. Restart backend server
+
+**Note:** Gemini is optional. The app works without it, but AI features (skill extraction, enhanced matching) will be disabled.
+
+---
+
+### Issue: Gemini Rate Limiting
+
+**Symptoms:**
+```
+Error: [429 Too Many Requests] You've exceeded the rate limit
+```
+
+**Cause:** Free tier Gemini API has rate limits:
+- 15 requests per minute
+- 1500 requests per day
+
+**Short-term Fix:**
+```javascript
+// Add delays between requests in matchingService.js
+await new Promise(resolve => setTimeout(resolve, 4000)); // 4 second delay
+```
+
+**Long-term Fix:**
+1. Implement caching for AI results
+2. Batch process requests
+3. Upgrade to paid API tier
+
+---
+
+### Issue: Gemini Returns Generic Scores
+
+**Symptoms:**
+- All match scores are similar (80-85)
+- No personality-based differentiation
+
+**Cause:** Model not receiving enough context or temperature too low
+
+**Fix in `/backend/services/matchingService.js`:**
+```javascript
+// Provide richer context
+const prompt = `
+Analyze compatibility for skill exchange:
+
+TEACHER (${teacherProfile.name}):
+- Bio: ${teacherProfile.bio}
+- Teaching: ${teachSkill.name} (${teachSkill.proficiency})
+- Personality: ${teacherProfile.personality_traits}
+- Learning Goals: ${teacherProfile.learning_goals}
+
+LEARNER (${learnerProfile.name}):
+- Bio: ${learnerProfile.bio}
+- Learning: ${learnSkill.name} (${learnSkill.proficiency})
+- Personality: ${learnerProfile.personality_traits}
+- Teaching: ${learnerProfile.skills_to_teach}
+
+Consider:
+1. Teaching expertise depth
+2. Learning goal alignment
+3. Personality compatibility
+4. Communication style match
+5. Reciprocal learning potential
+
+Return JSON: {"score": 0-100, "reasoning": "..."}
+`;
+```
+
+**Also check temperature:**
+```javascript
+// In /backend/config/gemini.js
+generationConfig: {
+  temperature: 0.7,  // Should be 0.5-0.9 for variety
+  topP: 0.8,
+  topK: 40
+}
+```
+
+---
+
+### Issue: Gemini Timeout Errors
+
+**Symptoms:**
+```
+Error: Request timeout
+```
+
+**Fix:** Add timeout configuration:
+```javascript
+// In /backend/services/matchingService.js
+const result = await textModel.generateContent(prompt, {
+  timeout: 30000  // 30 seconds
+});
 ```
 
 ---

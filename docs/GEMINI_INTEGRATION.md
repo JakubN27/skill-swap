@@ -113,10 +113,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const apiKey = process.env.GEMINI_API_KEY
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
+<<<<<<< HEAD
 // Text generation model
 export const textModel = genAI ? genAI.getGenerativeModel({
   model: 'gemini-pro',
   apiVersion: 'v1',
+=======
+// Text generation model - use full model path for v1 API
+export const textModel = genAI ? genAI.getGenerativeModel({
+  model: 'models/gemini-1.5-pro',  // Full path ensures v1 API
+>>>>>>> bb0f072 (add autoupdating match ratings)
   generationConfig: {
     temperature: 0.7,  // Creativity (0-1)
     topP: 0.8,         // Diversity
@@ -126,8 +132,12 @@ export const textModel = genAI ? genAI.getGenerativeModel({
 
 // Embedding model for semantic search
 export const embeddingModel = genAI ? genAI.getGenerativeModel({
+<<<<<<< HEAD
   model: 'embedding-001',
   apiVersion: 'v1'
+=======
+  model: 'models/embedding-001'  // Full path ensures v1 API
+>>>>>>> bb0f072 (add autoupdating match ratings)
 }) : null
 
 // Generate embeddings for text
