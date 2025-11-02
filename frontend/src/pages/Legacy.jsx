@@ -10,40 +10,78 @@ export default function Legacy() {
   const [error, setError] = useState(null);
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [user, setUser] = useState(null);
-  const [highlightNodes, setHighlightNodes] = useState(new Set());
-  const [highlightLinks, setHighlightLinks] = useState(new Set());
+  const [firstDegreeNodes, setFirstDegreeNodes] = useState(new Set());
+  const [secondDegreeNodes, setSecondDegreeNodes] = useState(new Set());
+  const [thirdDegreeNodes, setThirdDegreeNodes] = useState(new Set());
+  const [highlightLinks, setHighlightLinks] = useState(new Map()); // Map to store link degrees
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  const handleNodeHover = useCallback(node => {
-    if (!node) {
-      setHighlightNodes(new Set());
-      setHighlightLinks(new Set());
-      return;
-    }
+  const calculateConnections = useCallback((node) => {
+    const first = new Set([node.id]);
+    const second = new Set();
+    const third = new Set();
+    const links = new Map();
 
-    const newHighlightNodes = new Set([node.id]);
-    const newHighlightLinks = new Set();
-
-    // Find connected nodes and links
+    // Find first-degree connections
     graphData.links.forEach(link => {
-      if (link.source.id === node.id || link.target.id === node.id) {
-        newHighlightLinks.add(link);
-        newHighlightNodes.add(link.source.id === node.id ? link.target.id : link.source.id);
+      const sourceId = link.source.id ?? link.source;
+      const targetId = link.target.id ?? link.target;
+      
+      if (sourceId === node.id || targetId === node.id) {
+        const connectedId = sourceId === node.id ? targetId : sourceId;
+        first.add(connectedId);
+        links.set(link, 1); // 1 for first-degree links
       }
     });
 
-    setHighlightNodes(newHighlightNodes);
-    setHighlightLinks(newHighlightLinks);
+    // Find second-degree connections
+    graphData.links.forEach(link => {
+      const sourceId = link.source.id ?? link.source;
+      const targetId = link.target.id ?? link.target;
+      
+      if (first.has(sourceId) && !first.has(targetId)) {
+        second.add(targetId);
+        links.set(link, 2); // 2 for second-degree links
+      } else if (first.has(targetId) && !first.has(sourceId)) {
+        second.add(sourceId);
+        links.set(link, 2);
+      }
+    });
+
+    // Find third-degree connections
+    graphData.links.forEach(link => {
+      const sourceId = link.source.id ?? link.source;
+      const targetId = link.target.id ?? link.target;
+      
+      if (second.has(sourceId) && !first.has(targetId) && !second.has(targetId)) {
+        third.add(targetId);
+        links.set(link, 3); // 3 for third-degree links
+      } else if (second.has(targetId) && !first.has(sourceId) && !second.has(sourceId)) {
+        third.add(sourceId);
+        links.set(link, 3);
+      }
+    });
+
+    setFirstDegreeNodes(first);
+    setSecondDegreeNodes(second);
+    setThirdDegreeNodes(third);
+    setHighlightLinks(links);
   }, [graphData.links]);
 
-  const fetchUserMatches = async (userId) => {
-    const response = await fetch(`http://localhost:3000/api/matching/user/${userId}`);
-    if (!response.ok) return null;
+  const handleNodeHover = useCallback(node => {
+    // When unhovering, default back to the current user's node
+    setHoveredNode(node ? node.id : currentUserId);
     
-    const data = await response.json();
-    if (!data.success) return null;
-    
-    return data.matches || [];
-  };
+    if (!node) {
+      // When unhovering, calculate connections for the current user
+      const currentUserNode = { id: currentUserId };
+      calculateConnections(currentUserNode);
+      return;
+    }
+
+    calculateConnections(node);
+  }, [calculateConnections, currentUserId]);
 
   const loadUserAndConnections = async () => {
     try {
@@ -59,65 +97,56 @@ export default function Legacy() {
       }
 
       setUser(authUser);
+      setCurrentUserId(authUser.id);
+      // Initially set the hover to the current user's node
+      setHoveredNode(authUser.id);
 
-      // Fetch current user's matches
-      const userMatches = await fetchUserMatches(authUser.id);
-      if (!userMatches) {
-        throw new Error('Failed to load user matches');
+      // Fetch network data with one optimized query
+      const response = await fetch(`http://localhost:3000/api/network/${authUser.id}?depth=3`);
+      if (!response.ok) {
+        throw new Error('Failed to load network data');
+      }
+      
+      const { success, network } = await response.json();
+      if (!success) {
+        throw new Error('Failed to load network data');
       }
 
-      // Initialize data structures
+      // Process network data
       const nodes = new Map();
       const links = new Set();
-      const processedUsers = new Set();
+      
+      // Add current user first
+      nodes.set(authUser.id, {
+        id: authUser.id,
+        name: authUser.user_metadata?.full_name || 'You',
+        isCurrentUser: true
+      });
 
-      // Helper function to add a node
-      const addNode = (user, isCurrentUser = false) => {
-        if (!user) return;
-        const nodeData = {
-          id: user.id,
-          name: user.name || 'Anonymous',
-          isCurrentUser
-        };
-        nodes.set(user.id, nodeData);
-      };
+      // Process all connections
+      network.forEach(connection => {
+        // Add both users as nodes
+        nodes.set(connection.user_a_id, {
+          id: connection.user_a_id,
+          name: connection.user_a_name || 'Anonymous',
+          isCurrentUser: connection.user_a_id === authUser.id,
+          depth: connection.depth
+        });
 
-      // Helper function to add a link
-      const addLink = (sourceId, targetId) => {
-        const linkKey = [sourceId, targetId].sort().join('-');
-        links.add({ source: sourceId, target: targetId, key: linkKey });
-      };
+        nodes.set(connection.user_b_id, {
+          id: connection.user_b_id,
+          name: connection.user_b_name || 'Anonymous',
+          isCurrentUser: connection.user_b_id === authUser.id,
+          depth: connection.depth
+        });
 
-      // Add current user
-      addNode({ 
-        id: authUser.id, 
-        name: authUser.user_metadata?.full_name || 'You'
-      }, true);
-
-      // Process initial matches
-      for (const match of userMatches) {
-        const otherUser = match.user_a_id === authUser.id ? match.user_b : match.user_a;
-        addNode(otherUser);
-        addLink(authUser.id, otherUser.id);
-        processedUsers.add(otherUser.id);
-      }
-
-      // Fetch and process secondary connections
-      for (const userId of processedUsers) {
-        if (userId === authUser.id) continue;
-        
-        const secondaryMatches = await fetchUserMatches(userId);
-        if (!secondaryMatches) continue;
-
-        for (const match of secondaryMatches) {
-          const user1 = match.user_a;
-          const user2 = match.user_b;
-          
-          addNode(user1);
-          addNode(user2);
-          addLink(user1.id, user2.id);
-        }
-      }
+        // Add connection as link
+        links.add({
+          source: connection.user_a_id,
+          target: connection.user_b_id,
+          depth: connection.depth
+        });
+      });
 
       // Transform data for ForceGraph2D
       setGraphData({
@@ -160,15 +189,67 @@ export default function Legacy() {
       <div className="bg-primary-950 rounded-lg flex-1 overflow-hidden">
         <ForceGraph2D
           graphData={graphData}
-          nodeLabel="name"
-          nodeColor={node => highlightNodes.has(node.id) ? '#ffffff' : '#aaaaaa'}
           nodeRelSize={6}
-          linkWidth={link => highlightLinks.has(link) ? 2 : 1}
-          linkColor={link => highlightLinks.has(link) ? '#ffffff' : '#666666'}
           backgroundColor="#020617"
           onNodeHover={handleNodeHover}
           linkDirectionalParticles={2}
           linkDirectionalParticleSpeed={0.005}
+          nodeLabel={null}
+          nodeCanvasObject={(node, ctx, globalScale) => {
+            const isCurrentUser = node.isCurrentUser === true;
+            
+            // Determine node size
+            let size;
+            if (hoveredNode === node.id) {
+              size = 12; // hovered node
+            } else if (isCurrentUser && !hoveredNode) {
+              size = 12; // current user's node when no other node is hovered
+            } else {
+              size = 8; // default size
+            }
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+            
+            // Color based on connection degree
+            let fillColor;
+            if (hoveredNode === node.id) {
+              fillColor = '#ffffff'; // hovered node
+            } else if (firstDegreeNodes.has(node.id)) {
+              fillColor = '#ffffff'; // first degree connections
+            } else if (secondDegreeNodes.has(node.id)) {
+              fillColor = '#60746F'; // second degree connections
+            } else if (thirdDegreeNodes.has(node.id)) {
+              fillColor = '#0F352B'; // third degree connections
+            } else if (isCurrentUser && !hoveredNode) {
+              fillColor = '#ffffff'; // current user when no hover
+            } else {
+              fillColor = '#aaaaaa'; // default color
+            }
+            
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+
+            // Show label for hovered node or current user (when not hovering others)
+            const shouldShowLabel = hoveredNode === node.id || (isCurrentUser && !hoveredNode);
+            if (shouldShowLabel) {
+              const label = node.name;
+              const fontSize = 12/globalScale;
+              ctx.font = `${fontSize}px Sans-Serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = '#fff';
+              ctx.fillText(label, node.x, node.y + size + fontSize);
+            }
+          }}
+          linkColor={link => {
+            const degree = highlightLinks.get(link);
+            if (degree === 1) return '#ffffff';
+            if (degree === 2) return '#60746F';
+            if (degree === 3) return '#253937';
+            return '#666666';
+          }}
+          linkWidth={link => highlightLinks.get(link) ? 2 : 1}
         />
       </div>
     </div>
