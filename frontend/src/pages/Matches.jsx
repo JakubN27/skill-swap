@@ -307,14 +307,19 @@ export default function Matches() {
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <a 
+                  href={`/profile/${match.user_id}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition"
+                >
                   <img
                     src={match.avatar_url || `https://ui-avatars.com/api/?name=${match.user_name}&size=200`}
                     alt={match.user_name}
-                    className="w-12 h-12 rounded-full"
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
-                    <h3 className="text-lg font-semibold">{match.user_name}</h3>
+                    <h3 className="text-lg font-semibold hover:text-primary-600 transition">
+                      {match.user_name}
+                    </h3>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">Match Score:</span>
                       <span className="font-bold text-primary-600">
@@ -322,7 +327,7 @@ export default function Matches() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </a>
               </div>
 
               {/* Bio */}

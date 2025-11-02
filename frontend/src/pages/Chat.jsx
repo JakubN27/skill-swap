@@ -180,7 +180,7 @@ export default function Chat() {
               <img
                 src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${otherUser?.name}&size=200`}
                 alt={otherUser?.name}
-                className="w-10 h-10 rounded-full ring-2 ring-primary-100"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100"
               />
               <div>
                 <h2 className="font-semibold text-gray-900">{otherUser?.name}</h2>
@@ -240,7 +240,7 @@ export default function Chat() {
                 <img
                   src={otherUser?.avatar_url || `https://ui-avatars.com/api/?name=${otherUser?.name}&size=200`}
                   alt={otherUser?.name}
-                  className="w-24 h-24 rounded-full mx-auto mb-3 ring-4 ring-primary-100"
+                  className="w-24 h-24 rounded-full object-cover mx-auto mb-3 ring-4 ring-primary-100"
                 />
                 <h3 className="text-xl font-bold text-gray-900">{otherUser?.name}</h3>
                 {otherUser?.bio && (

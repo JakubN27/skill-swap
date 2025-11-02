@@ -342,8 +342,8 @@ export async function createMatch(userAId, userBId, score, mutualSkills) {
       .from('matches')
       .select(`
         *,
-        user_a:users!matches_user_a_id_fkey(id, name, bio, teach_skills, learn_skills),
-        user_b:users!matches_user_b_id_fkey(id, name, bio, teach_skills, learn_skills)
+        user_a:users!matches_user_a_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills),
+        user_b:users!matches_user_b_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills)
       `)
       .or(`and(user_a_id.eq.${userAId},user_b_id.eq.${userBId}),and(user_a_id.eq.${userBId},user_b_id.eq.${userAId})`)
       .maybeSingle()
@@ -375,8 +375,8 @@ export async function createMatch(userAId, userBId, score, mutualSkills) {
       })
       .select(`
         *,
-        user_a:users!matches_user_a_id_fkey(id, name, bio, teach_skills, learn_skills),
-        user_b:users!matches_user_b_id_fkey(id, name, bio, teach_skills, learn_skills)
+        user_a:users!matches_user_a_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills),
+        user_b:users!matches_user_b_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills)
       `)
       .single()
     
@@ -416,8 +416,8 @@ export async function getUserMatches(userId) {
       .from('matches')
       .select(`
         *,
-        user_a:users!matches_user_a_id_fkey(id, name, bio, teach_skills, learn_skills),
-        user_b:users!matches_user_b_id_fkey(id, name, bio, teach_skills, learn_skills)
+        user_a:users!matches_user_a_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills),
+        user_b:users!matches_user_b_id_fkey(id, name, bio, avatar_url, teach_skills, learn_skills)
       `)
       .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
       .order('created_at', { ascending: false })

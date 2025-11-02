@@ -1,42 +1,159 @@
-# SkillSwap 🎓✨
+# SkillSwap Documentation 📚
 
-**AI-Powered Peer-to-Peer Learning Platform** - Learn from others, teach what you know.
+> **Complete documentation hub for the SkillSwap platform - Your comprehensive context center for development, troubleshooting, and onboarding.**
 
 Built for DurHack 2025 🚀
 
 ---
 
-## 🌟 Features
+## 📖 Documentation Structure
 
-- **🎯 Smart Matching** - Reciprocal skill-based matching algorithm
-- **🔍 Search & Discovery** - Find learning partners by specific skills
-- **👤 Profile Management** - Organize skills by category and proficiency
-- **💬 Real-time Chat** - Integrated TalkJS chat for matched users
-- **📬 Conversations Inbox** - View and manage all your chats in one place
-- **🤝 Mutual Skills Display** - See what you can learn from each other
-- **🤖 AI Features** - Skill extraction and learning plans with Gemini
-- **📊 Match Scores** - See compatibility percentage with each match
+This documentation is organized into **5 core files** for easy navigation:
+
+### 🌟 [OVERVIEW.md](./OVERVIEW.md)
+**What is SkillSwap?**
+- Project summary and vision
+- Key features and capabilities
+- Tech stack overview
+- System architecture diagram
+- User workflows
+- Team information
+
+👉 **Read this first** if you're new to the project!
 
 ---
 
-## 🏗️ Tech Stack
+### 🛠️ [SETUP.md](./SETUP.md)
+**Getting Started**
+- Prerequisites and requirements
+- Installation instructions
+- Environment configuration
+- Database setup
+- Running the application
+- Common setup issues and fixes
 
-**Frontend:**
-- React 19 + Vite
-- TailwindCSS for styling
-- React Router for navigation
-- React Hot Toast for notifications
-- TalkJS for real-time chat
+👉 **Start here** to get SkillSwap running locally!
 
-**Backend:**
-- Node.js + Express
-- Supabase (PostgreSQL + Auth)
-- Google Gemini AI
+---
 
-**Database:**
-- PostgreSQL with Supabase
-- JSONB for flexible skill storage
-- Row Level Security (RLS)
+### 🏛️ [ARCHITECTURE.md](./ARCHITECTURE.md)
+**Technical Deep Dive**
+- Database schema and relationships
+- API architecture and endpoints
+- Matching algorithm explained
+- Chat integration with TalkJS
+- AI features (Gemini integration)
+- Security and authentication
+- Performance optimizations
+- State management
+- Testing strategy
+
+👉 **Read this** to understand how everything works!
+
+---
+
+### 🔧 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+**Problem Solving Guide**
+- Quick diagnostics
+- Common issues and solutions
+- Database troubleshooting
+- Chat and conversations issues
+- Authentication problems
+- API and backend issues
+- Frontend debugging
+- Development environment fixes
+
+👉 **Check here** when something breaks!
+
+---
+
+### 👥 [DEVELOPMENT.md](./DEVELOPMENT.md)
+**Team Workflow & Standards**
+- Team structure and roles
+- Development workflow
+- Git and version control
+- Project structure
+- Development phases
+- Task management
+- Code standards
+- Testing guidelines
+- Deployment checklist
+
+👉 **Follow this** for team coordination and best practices!
+
+---
+
+## � Quick Links
+
+### For New Team Members
+1. Start with [OVERVIEW.md](./OVERVIEW.md) - Understand the project
+2. Follow [SETUP.md](./SETUP.md) - Get your environment running
+3. Read [DEVELOPMENT.md](./DEVELOPMENT.md) - Learn the workflow
+4. Bookmark [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - For when you need help
+
+### For Developers
+- **Backend work?** → [ARCHITECTURE.md](./ARCHITECTURE.md) (API section)
+- **Frontend work?** → [ARCHITECTURE.md](./ARCHITECTURE.md) (Frontend section)
+- **Chat issues?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) (Chat section)
+- **Database work?** → [ARCHITECTURE.md](./ARCHITECTURE.md) (Database section)
+
+### For Debugging
+- **Something broken?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) (Start here!)
+- **500 errors?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md#issue-500-internal-server-error)
+- **Chat not working?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md#chat--conversations-issues)
+- **Setup problems?** → [SETUP.md](./SETUP.md#troubleshooting-common-setup-issues)
+
+---
+
+## 🎯 Quick Start (TL;DR)
+
+**Never set up before? Do this:**
+
+```bash
+# 1. Clone and install
+git clone <repo-url>
+cd durhack-2025
+npm install
+
+# 2. Configure environment (see SETUP.md for details)
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+# Edit both .env files with your credentials
+
+# 3. Run database migration
+./scripts/setup-chat-db.sh
+
+# 4. Start everything
+npm run dev
+```
+
+**Already set up? Just run:**
+
+```bash
+npm run dev
+```
+
+See [SETUP.md](./SETUP.md) for detailed instructions.
+
+---
+
+## 🌟 Project Overview
+
+**SkillSwap** is an AI-powered peer-to-peer learning platform that connects people who want to learn with those who want to teach.
+
+### Key Features
+- **🎯 Smart Matching** - Reciprocal skill-based algorithm
+- **💬 Real-time Chat** - Integrated TalkJS messaging
+- **🤖 AI Features** - Skill extraction & learning plans
+- **📊 Match Scores** - Compatibility percentages
+- **🔍 Search & Discovery** - Find learning partners
+
+### Tech Stack
+- **Frontend:** React 19 + Vite + TailwindCSS
+- **Backend:** Node.js + Express
+- **Database:** Supabase (PostgreSQL)
+- **Chat:** TalkJS
+- **AI:** Google Gemini
 
 ---
 
@@ -233,111 +350,67 @@ npm start                # Production mode
 
 ---
 
-## 📚 Documentation
+## 📚 Legacy Documentation
 
-- `QUICK_START.md` - Getting started guide
-- `PROJECT_STRUCTURE.md` - Architecture explanation
-- `MATCHING_SYSTEM_GUIDE.md` - Matching algorithm details
-- `CHAT_FEATURE_GUIDE.md` - Real-time chat documentation
-- `WORKSPACE_SETUP.md` - npm workspaces guide
-- `backend/API_DOCUMENTATION.md` - API reference
-- `backend/TESTING_GUIDE.md` - Testing guide
-- `backend/SETUP.md` - Backend setup
+The `/docs` folder contains additional documentation files from earlier development phases. These are preserved for historical reference:
+
+- **Setup Guides:** Various setup documentation from different phases
+- **Feature Guides:** Detailed guides for chat, matching, and profile features  
+- **Fix Documentation:** Detailed records of issues resolved during development
+- **Team Planning:** Original team organization and task boards
+- **Migration Guides:** Database migration documentation
+
+**Note:** The 5 core documentation files above supersede these legacy files. Refer to the legacy docs only if you need historical context or specific implementation details not covered in the main documentation.
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Read [DEVELOPMENT.md](./DEVELOPMENT.md) for workflow and standards
+2. Check [TASK_BOARD.md](./TASK_BOARD.md) for available tasks
+3. Create a feature branch
+4. Make your changes
+5. Test thoroughly (see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md))
+6. Submit pull request
 
 ---
 
-## 📝 License
+## 🆘 Getting Help
 
-This project was created for DurHack 2025.
+### When Something Goes Wrong
 
----
+1. **Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Most common issues are documented
+2. **Check browser console** - Look for errors (F12)
+3. **Check backend logs** - Terminal where `npm run dev` is running
+4. **Test API directly** - Use curl or browser to test endpoints
+5. **Check database** - Use Supabase dashboard to verify data
 
-## 👥 Team
+### Still Stuck?
 
-- 3 Developers
-- 1 Designer
-
----
-
-## 🙏 Acknowledgments
-
-- DurHack 2025 organizers
-- Supabase for the awesome backend
-- Google Gemini for AI capabilities
-
----
-
-**Made with ❤️ at DurHack 2025**
-npm install
-```
-
-2. **Configure environment:**
-```bash
-cp frontend/.env.example frontend/.env.local
-# Edit .env.local with your Supabase and Gemini credentials
-```
-
-3. **Run the app:**
-```bash
-npm run dev
-```
-
-Visit: http://localhost:3000
-
----
-
-## 📚 Documentation
-
-- **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running
-- **[Development Log](docs/DEVLOG.md)** - Progress tracking
-- **[Database Setup](docs/01_database_setup.md)** - Schema details
-- **[Frontend Setup](docs/03_frontend_setup.md)** - App structure
-
----
-
-## 🎯 Current Status
-
-✅ **Completed:**
-- Database schema with pgvector
-- Frontend with auth & routing
-- Profile management
-- Basic UI/UX
-
-🚧 **In Progress:**
-- AI skill extraction
-- Matching algorithm
-- Real-time chat
-
-📋 **Planned:**
-- AI middleman features
-- Skill legacy visualization
-- Gamification system
-
----
-
-## 🏆 Hackathon Goals
-
-Built in 36-48 hours for DurHack 2025, focusing on:
-- Innovative use of embedded AI (not chatbots)
-- Reciprocal skill matching
-- Social impact through knowledge sharing
+Include this information when asking for help:
+- What you were trying to do
+- Steps to reproduce
+- Error messages (console + backend)
+- Your environment (OS, Node version, browser)
+- User ID / Match ID (if applicable)
 
 ---
 
 ## 📄 License
 
-MIT License - DurHack 2025
+Built for DurHack 2025
 
 ---
 
-*Happy skill swapping! 🎓✨*
+## 🙏 Acknowledgments
+
+- **Supabase** - Database and authentication
+- **TalkJS** - Real-time chat
+- **Google Gemini** - AI features
+- **DurHack 2025** - Hackathon organizers
+
+---
+
+**Happy Coding! 🚀**
+
+*Last Updated: January 2025*
