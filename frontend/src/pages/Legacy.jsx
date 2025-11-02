@@ -69,6 +69,12 @@ export default function Legacy() {
     setHighlightLinks(links);
   }, [graphData.links]);
 
+  const handleNodeClick = useCallback(node => {
+    if (node) {
+      navigate(`/profile/${node.id}`);
+    }
+  }, [navigate]);
+
   const handleNodeHover = useCallback(node => {
     // When unhovering, default back to the current user's node
     setHoveredNode(node ? node.id : currentUserId);
@@ -192,6 +198,7 @@ export default function Legacy() {
           nodeRelSize={6}
           backgroundColor="#020617"
           onNodeHover={handleNodeHover}
+          onNodeClick={handleNodeClick}
           linkDirectionalParticles={2}
           linkDirectionalParticleSpeed={0.005}
           nodeLabel={null}
