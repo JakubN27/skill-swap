@@ -126,7 +126,7 @@ function cosineSimilarity(vecA, vecB) {
  * Match users where A can teach what B wants to learn, and vice versa
  * Enhanced with personality compatibility and skill analysis
  */
-export async function findMatches(userId, limit = 10, searchSkill = null) {
+export async function findMatches(userId, limit = 10, searchSkill = null, includeAI = false) {
   try {
     // Get the user's profile
     const { data: user, error: userError } = await supabase
@@ -170,8 +170,8 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
       })
     }
     
-    // Cache user analysis to avoid repeated API calls
-    const userAnalysis = await analyzeProfileSkills(user)
+    // Cache user analysis to avoid repeated API calls (only if AI is enabled)
+    const userAnalysis = includeAI ? await analyzeProfileSkills(user) : null
     
     // Process matches in parallel batches for better performance
     const BATCH_SIZE = 10 // Process 10 potential matches at a time
@@ -184,8 +184,8 @@ export async function findMatches(userId, limit = 10, searchSkill = null) {
       const batchResults = await Promise.all(
         batch.map(async (otherUser) => {
           try {
-            // Analyze other user's profile (will use cache if available)
-            const otherUserAnalysis = await analyzeProfileSkills(otherUser)
+            // Analyze other user's profile (will use cache if available) - only if AI enabled
+            const otherUserAnalysis = includeAI ? await analyzeProfileSkills(otherUser) : null
 
         // Calculate skill match scores
           const scoreAtoB = calculateMatchScore(

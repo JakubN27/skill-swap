@@ -14,8 +14,9 @@ matchingRouter.get('/find/:userId', async (req, res) => {
     const { userId } = req.params
     const limit = parseInt(req.query.limit) || 10
     const searchSkill = req.query.skill || null
+    const includeAI = req.query.includeAI === 'true'
     
-    const matches = await findMatches(userId, limit, searchSkill)
+    const matches = await findMatches(userId, limit, searchSkill, includeAI)
     
     res.json({
       success: true,
