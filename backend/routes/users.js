@@ -6,6 +6,44 @@ import { generateEmbedding } from '../config/gemini.js'
 export const usersRouter = express.Router()
 
 /**
+ * GET /api/users/health
+ * Simple health check for Supabase connection
+ */
+usersRouter.get('/health', async (req, res) => {
+  try {
+    console.log('[Users Health] Testing Supabase connection...')
+    const startTime = Date.now()
+    
+    // Simple query to check connection
+    const { error } = await supabase.from('users').select('count').limit(1)
+    
+    const duration = Date.now() - startTime
+    console.log(`[Users Health] Connection test took ${duration}ms`)
+    
+    if (error) {
+      console.error('[Users Health] Error:', error)
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Database connection failed',
+        duration 
+      })
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Supabase connection OK',
+      duration 
+    })
+  } catch (error) {
+    console.error('[Users Health] Exception:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
+
+/**
  * GET /api/users
  * Get all users (for admin or matching)
  */

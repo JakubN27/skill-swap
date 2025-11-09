@@ -23,4 +23,18 @@ console.log('✅ Supabase configuration loaded successfully')
 console.log(`   URL: ${supabaseUrl}`)
 
 // Use service key for backend operations (bypasses RLS)
-export const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// Add timeout options for serverless environment
+export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-connection-timeout': '5000', // 5 second timeout
+    },
+  },
+})
