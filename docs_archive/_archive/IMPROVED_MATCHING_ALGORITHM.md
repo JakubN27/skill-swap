@@ -208,7 +208,7 @@ Each match now shows:
 
 ### Backend Service
 
-**File:** `/backend/services/matchingService.js`
+**File:** `/api/services/matchingService.js`
 
 **Key Functions:**
 

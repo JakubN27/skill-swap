@@ -297,7 +297,7 @@ The project is well-documented, feature-complete, and ready for development or d
 - [**docs/SEEDING.md**](../docs/SEEDING.md) - Database seeding guide
 - [**docs/GEMINI_INTEGRATION.md**](../docs/GEMINI_INTEGRATION.md) - AI features
 - [**docs/MATCHING_ALGORITHM.md**](../docs/MATCHING_ALGORITHM.md) - Matching explained
-- [**backend/README.md**](../backend/README.md) - Backend documentation
+ - [**api/README.md**](../api/README.md) - Backend documentation (now under `api/`)
 
 ---
 

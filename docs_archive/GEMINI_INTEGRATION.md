@@ -58,7 +58,7 @@ Generates motivational summaries after learning sessions.
 
 ### 2. Configure Backend
 
-Add to `/backend/.env`:
+Add to `/api/.env`:
 ```bash
 # Gemini API Key (Optional - AI features will be disabled if not set)
 GEMINI_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXX
@@ -192,7 +192,7 @@ export async function generateEmbedding(text) {
 }
 ```
 
-**Implementation:** `/backend/routes/skillExtraction.js`
+**Implementation:** `/api/routes/skillExtraction.js`
 
 ---
 
@@ -238,7 +238,7 @@ export async function generateEmbedding(text) {
 }
 ```
 
-**Implementation:** `/backend/routes/ai.js`
+**Implementation:** `/api/routes/ai.js`
 
 ---
 
@@ -276,7 +276,7 @@ export async function generateEmbedding(text) {
 }
 ```
 
-**Implementation:** `/backend/routes/ai.js`
+**Implementation:** `/api/routes/ai.js`
 
 ---
 
@@ -353,7 +353,7 @@ Update user profile in Supabase
 Return skills + embedding dimension
 ```
 
-**Code:** `/backend/services/aiService.js`
+**Code:** `/api/services/aiService.js`
 
 ```javascript
 export async function extractSkills(bioText) {
@@ -531,7 +531,7 @@ curl -X POST http://localhost:3000/api/skills/extract \
 
 **Issue:** "Gemini API not configured"
 - **Cause:** Missing or invalid `GEMINI_API_KEY`
-- **Fix:** Add key to `/backend/.env` and restart server
+- **Fix:** Add key to `/api/.env` and restart server
 
 **Issue:** Rate limit errors
 - **Cause:** Exceeded 60 requests/minute
@@ -589,7 +589,7 @@ return skills
 
 ### 3. Custom Prompts
 
-Adjust prompts in `/backend/services/aiService.js` to fine-tune AI behavior:
+Adjust prompts in `/api/services/aiService.js` to fine-tune AI behavior:
 
 ```javascript
 const prompt = `
@@ -651,7 +651,7 @@ Test full API endpoints with real Gemini calls (use dev API key).
 ## 🔗 Related Documentation
 
 - [Architecture Overview](./ARCHITECTURE.md) - System design and data flow
-- [API Documentation](../backend/API_DOCUMENTATION.md) - Full API reference
+- [API Documentation](../api/API_DOCUMENTATION.md) - Full API reference
 - [Setup Guide](./SETUP.md) - Initial project setup
 - [Development Guide](./DEVELOPMENT.md) - Contributing and development workflow
 

@@ -208,7 +208,7 @@ Each match now shows:
 
 ### Backend Service
 
-**File:** `/backend/services/matchingService.js`
+**File:** `/api/services/matchingService.js`
 
 **Key Functions:**
 
@@ -440,7 +440,7 @@ Recommendation: STRONG ✅
 
 - [Gemini Integration Guide](./GEMINI_INTEGRATION.md) - AI setup and configuration
 - [Architecture Overview](./ARCHITECTURE.md) - System design
-- [API Documentation](../backend/API_DOCUMENTATION.md) - Endpoint details
+- [API Documentation](../api/API_DOCUMENTATION.md) - Endpoint details
 - [Matching System Guide](../MATCHING_SYSTEM_GUIDE.md) - Original matching logic
 
 ---

@@ -96,7 +96,7 @@ Sorting order:
 ## Files Modified
 
 ### Backend
-- ✅ `/backend/services/matchingService.js`
+- ✅ `/api/services/matchingService.js`
   - Added `analyzeCompatibilityWithAI()` function
   - Enhanced `calculatePersonalityScore()` function
   - Updated `findMatches()` to use AI analysis

@@ -568,7 +568,7 @@ Error: models/gemini-1.5-flash is not found for API version v1beta
 
 **Fix:** Use the full model path with `models/` prefix to force v1 API usage.
 
-**Solution in `/backend/config/gemini.js`:**
+**Solution in `/api/config/gemini.js`:**
 ```javascript
 // ✅ CORRECT - Use full model path for v1 API
 export const textModel = genAI ? genAI.getGenerativeModel({
@@ -619,7 +619,7 @@ npm run dev
 
 **Fix:**
 1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Add to `/backend/.env`:
+2. Add to `/api/.env`:
    ```bash
    GEMINI_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXX
    ```
@@ -661,7 +661,7 @@ await new Promise(resolve => setTimeout(resolve, 4000)); // 4 second delay
 
 **Cause:** Model not receiving enough context or temperature too low
 
-**Fix in `/backend/services/matchingService.js`:**
+**Fix in `/api/services/matchingService.js`:**
 ```javascript
 // Provide richer context
 const prompt = `
@@ -692,7 +692,7 @@ Return JSON: {"score": 0-100, "reasoning": "..."}
 
 **Also check temperature:**
 ```javascript
-// In /backend/config/gemini.js
+// In /api/config/gemini.js
 generationConfig: {
   temperature: 0.7,  // Should be 0.5-0.9 for variety
   topP: 0.8,
@@ -711,7 +711,7 @@ Error: Request timeout
 
 **Fix:** Add timeout configuration:
 ```javascript
-// In /backend/services/matchingService.js
+// In /api/services/matchingService.js
 const result = await textModel.generateContent(prompt, {
   timeout: 30000  // 30 seconds
 });

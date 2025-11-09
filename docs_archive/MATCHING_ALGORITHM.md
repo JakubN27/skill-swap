@@ -240,7 +240,7 @@ Response:
 ## Configuration
 
 ### Enable/Disable AI
-Set in `/backend/.env`:
+Set in `/api/.env`:
 ```bash
 # With AI
 GEMINI_API_KEY=AIzaSy...
@@ -250,7 +250,7 @@ GEMINI_API_KEY=AIzaSy...
 ```
 
 ### Adjust Weights
-Edit `/backend/services/matchingService.js`:
+Edit `/api/services/matchingService.js`:
 ```javascript
 finalScore = (
   skillScore * 0.40 +              // Adjust these
@@ -296,8 +296,8 @@ finalScore = (
 
 ## Related Files
 
-- `/backend/services/matchingService.js` - Core algorithm
-- `/backend/routes/matching.js` - API endpoints
+- `/api/services/matchingService.js` - Core algorithm
+- `/api/routes/matching.js` - API endpoints
 - `/frontend/src/pages/Matches.jsx` - UI display
 
 ---
