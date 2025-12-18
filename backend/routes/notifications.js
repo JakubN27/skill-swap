@@ -10,7 +10,9 @@ export const notificationsRouter = express.Router()
 notificationsRouter.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params
-    const { limit = 50, offset = 0, unreadOnly = false } = req.query
+    const limit = parseInt(req.query.limit) || 50
+    const offset = parseInt(req.query.offset) || 0
+    const unreadOnly = req.query.unreadOnly === 'true'
 
     let query = supabase
       .from('notifications')
@@ -19,7 +21,7 @@ notificationsRouter.get('/:userId', async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (unreadOnly === 'true') {
+    if (unreadOnly) {
       query = query.eq('read', false)
     }
 

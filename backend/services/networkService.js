@@ -39,7 +39,7 @@ export async function getUserNetwork(userId, depth = 5) {  // Increased default 
               name
             )
           `)
-          .or(`user_a_id.eq.${currentUser},user_b_id.eq.${currentUser})`);
+          .or(`user_a_id.eq.${currentUser},user_b_id.eq.${currentUser}`);
 
         if (error) {
           console.error(`[NetworkService] Error fetching depth ${currentDepth} connections:`, error);

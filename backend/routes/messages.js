@@ -45,7 +45,8 @@ messagesRouter.post('/', async (req, res) => {
 messagesRouter.get('/match/:matchId', async (req, res) => {
   try {
     const { matchId } = req.params
-    const { limit = 50, offset = 0 } = req.query
+    const limit = parseInt(req.query.limit) || 50
+    const offset = parseInt(req.query.offset) || 0
 
     const { data, error } = await supabase
       .from('messages')
