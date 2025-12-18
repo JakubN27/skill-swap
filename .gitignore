@@ -13,6 +13,8 @@ pnpm-debug.log*
 .env*.local
 api/.env
 api/.env.local
+backend/.env
+frontend/.env
 
 # Dependencies
 node_modules
