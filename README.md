@@ -76,7 +76,7 @@ Backend health check:
 
 ## Testing
 
-There is a small smoke test suite (API health + basic routing):
+There is a lightweight API test suite covering routing and common edge cases (validation errors, missing resources, etc.). Tests run without real Supabase/Gemini keys by stubbing external calls.
 
 ```bash
 npm test
